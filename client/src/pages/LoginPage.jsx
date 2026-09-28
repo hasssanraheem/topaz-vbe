@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { signInWithEmailAndPassword } from 'firebase/auth';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { auth } from '../config/firebase.js';
 import { apiFetch } from '../lib/api.js';
 import { useAuth } from '../context/AuthContext.jsx';
@@ -21,10 +21,14 @@ const ACCOUNT_MAP = [
 export default function LoginPage() {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [serverStatus, setServerStatus] = useState('idle'); // idle | waking | ready
   const navigate = useNavigate();
+  const location = useLocation();
   const { appUser, loading } = useAuth();
+  // Message passed via navigate state (e.g. admin signed this session out)
+  const signedOutMsg = location.state?.message;
 
   // Redirect already-logged-in users
   useEffect(() => {
@@ -81,6 +85,12 @@ export default function LoginPage() {
       <div className="login-wrap">
         <h2>Topaz-Vbe — Sign In</h2>
 
+        {signedOutMsg && (
+          <div className="server-wake-notice" style={{ background: '#ffeeba', borderColor: '#f0ad4e' }}>
+            {signedOutMsg}
+          </div>
+        )}
+
         {serverStatus === 'waking' && (
           <div className="server-wake-notice">
             Connecting to server… this may take up to 30 seconds on first load.
@@ -104,15 +114,30 @@ export default function LoginPage() {
 
           <div className="field-row">
             <label className="field-label" htmlFor="password">Password</label>
-            <input
-              id="password"
-              className="field-input"
-              type="password"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              autoComplete="current-password"
-              required
-            />
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+              <input
+                id="password"
+                className="field-input"
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                autoComplete="current-password"
+                required
+                style={{ paddingRight: 40, width: '100%' }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(v => !v)}
+                style={{
+                  position: 'absolute', right: 8, background: 'none',
+                  border: 'none', cursor: 'pointer', color: '#555', fontSize: 13, padding: 2,
+                }}
+                tabIndex={-1}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? 'Hide' : 'Show'}
+              </button>
+            </div>
           </div>
 
           {error && <div className="field-error" style={{ marginBottom: 8 }}>{error}</div>}

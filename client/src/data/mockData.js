@@ -2,7 +2,8 @@
 // All numbers are mock values constructed to be internally consistent.
 // Revenue = price × sales, profit = revenue − costs, cash carries forward.
 
-export const AREAS = ['South', 'West', 'North', 'Export'];
+// Area order matches the image form: Export first, then home areas
+export const AREAS = ['Export', 'South', 'West', 'North'];
 export const PRODUCTS = ['Product 1', 'Product 2', 'Product 3'];
 
 // From Table 3 (manual)
@@ -21,9 +22,12 @@ export const PERSONNEL_COSTS = {
 };
 
 // From Table 17 (manual)
-export const MIN_SALARY = 2000;
-export const MIN_MGMT_BUDGET = 40000;
+export const MIN_SALARY = 2000;        // full £ (form displays as £'00, so min shown = 20)
+export const MIN_MGMT_BUDGET = 40000; // full £ (form displays as £'000, so min shown = 40)
 export const MIN_ASSEMBLY_WAGE = 8.50;
+
+// Van purchase cap — manual does not specify a limit; set null to disable
+export const MAX_VANS_PER_QUARTER = null;
 
 // From Table 8 (manual)
 export const PRODUCTION_COSTS = {
@@ -93,22 +97,20 @@ export const PERIODS = {
     submitted: false,
     locked: false,
 
-    // Decisions (what was entered)
+    // Decisions (what was entered) — area order: [Export, South, West, North]
     decisions: {
-      // Pricing: [P1_home, P2_home, P3_home, P1_export, P2_export, P3_export]
       prices: { home: [180, 220, 350], export: [200, 240, 380] },
-      // Advertising: [product][area] (South/West/North/Export)
-      advertising: [
-        [2000, 1500, 2500, 1000],
-        [2500, 2000, 3000, 1200],
-        [3000, 2500, 4000, 1500],
-      ],
-      productDev: [5000, 5000, 5000],
+      promotion: {
+        tradePres:     [0, 0, 0],
+        adSupport:     [2000, 2500, 3000],
+        merchandising: [0, 0, 0],
+      },
+      researchExp: [5000, 5000, 5000],
       implementImprovement: [false, false, false],
       daysCredit: 30,
       buyCompetitorInfo: false,
       buyMarketShares: false,
-      salespeopleAlloc: [2, 1, 2, 1],
+      salespeopleAlloc: [1, 2, 2, 1],
       salespersonSalary: 3000,
       salesCommission: 5,
       managementBudget: 50000,
@@ -118,9 +120,9 @@ export const PERIODS = {
       machinesToSell: 0,
       machinesToOrder: 0,
       deliverySchedule: [
-        [400, 250, 600, 800],
-        [300, 200, 450, 600],
-        [150, 100, 200, 300],
+        [800, 400, 250, 600],
+        [600, 300, 200, 450],
+        [300, 150, 100, 200],
       ],
       salespeopleRecruit: 0,
       salespersonsDismiss: 0,
@@ -133,7 +135,8 @@ export const PERIODS = {
       materialsSupplier: 1,
       materialsDeliveries: 4,
       dividendRate: 5,
-      vansBuySell: 0,
+      vansToBuy: 0,
+      vansToSell: 0,
     },
 
     // Resources employed
@@ -786,25 +789,41 @@ export const PERIODS = {
   },
 };
 
-// Default decisions for a new period (used for reset)
+// Default decisions for a new period.
+// Area index order matches AREAS = ['Export','South','West','North'] (image form order).
+// Monetary fields stored in full £; form displays in scaled units (£'00, £'000) as labelled.
 export const DEFAULT_DECISIONS = {
   prices: { home: [180, 220, 350], export: [200, 240, 380] },
-  advertising: [[2000,1500,2500,1000],[2500,2000,3000,1200],[3000,2500,4000,1500]],
-  productDev: [5000, 5000, 5000],
+  // Promotion by media-type × product (£ full value; form label says £'000 so display /1000)
+  promotion: {
+    tradePres:     [0, 0, 0],
+    adSupport:     [2000, 2500, 3000],
+    merchandising: [0, 0, 0],
+  },
+  // Research / product-development expenditure per product (£ full value; displayed as £'000)
+  researchExp: [5000, 5000, 5000],
   implementImprovement: [false, false, false],
   daysCredit: 30,
   buyCompetitorInfo: false,
   buyMarketShares: false,
-  salespeopleAlloc: [2, 1, 2, 1],
+  // Allocation order: [Export, South, West, North]
+  salespeopleAlloc: [1, 2, 2, 1],
+  // Salary stored in full £; form displays as £'00 (so 3000 → user sees "30")
   salespersonSalary: 3000,
   salesCommission: 5,
+  // Budget stored in full £; form displays as £'000 (so 50000 → user sees "50")
   managementBudget: 50000,
   shiftLevel: 1,
-  assemblyTimes: [110, 160, 320],
+  assemblyTimes: [110, 160, 320],  // per product: P1 ≥100, P2 ≥150, P3 ≥300 (Table 3)
   contractMaintenance: 20,
   machinesToSell: 0,
   machinesToOrder: 0,
-  deliverySchedule: [[400,250,600,800],[300,200,450,600],[150,100,200,300]],
+  // Delivery schedule [product][area] — area order: [Export, South, West, North]
+  deliverySchedule: [
+    [800, 400, 250, 600],  // P1
+    [600, 300, 200, 450],  // P2
+    [300, 150, 100, 200],  // P3
+  ],
   salespeopleRecruit: 0,
   salespersonsDismiss: 0,
   salespersonsTrain: 0,
@@ -816,5 +835,6 @@ export const DEFAULT_DECISIONS = {
   materialsSupplier: 1,
   materialsDeliveries: 4,
   dividendRate: 0,
-  vansBuySell: 0,
+  vansToBuy: 0,   // separate from vansToSell (image has two distinct fields)
+  vansToSell: 0,
 };

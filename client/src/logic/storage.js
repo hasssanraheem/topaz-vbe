@@ -1,107 +1,96 @@
-// storage.js — localStorage persistence, wrapped in try/catch
+// storage.js — localStorage persistence, namespaced per team and period
+// Key format: "topaz:team{n}:period{p}:decisions" / "topaz:team{n}:period{p}:submitted"
+// This ensures teams using the same browser never overwrite each other's data.
 
-const KEY_SESSION = 'topaz_session';
-const KEY_DECISIONS = 'topaz_decisions';
-const KEY_SUBMITTED = 'topaz_submitted';
-
-// ── Session (login info) ──────────────────────────────────────────────────────
-
-export function saveSession(session) {
-  try { localStorage.setItem(KEY_SESSION, JSON.stringify(session)); } catch (_) {}
+function decKey(teamNumber, period) {
+  return `topaz:team${teamNumber}:period${period}:decisions`;
+}
+function subKey(teamNumber, period) {
+  return `topaz:team${teamNumber}:period${period}:submitted`;
 }
 
-export function loadSession() {
+// ── Decisions ─────────────────────────────────────────────────────────────────
+
+export function saveDecisions(teamNumber, period, decisions) {
   try {
-    const raw = localStorage.getItem(KEY_SESSION);
+    localStorage.setItem(decKey(teamNumber, period), JSON.stringify(decisions));
+    return true;
+  } catch (_) { return false; }
+}
+
+export function loadDecisions(teamNumber, period) {
+  try {
+    const raw = localStorage.getItem(decKey(teamNumber, period));
     return raw ? JSON.parse(raw) : null;
   } catch (_) { return null; }
 }
 
-export function clearSession() {
-  try { localStorage.removeItem(KEY_SESSION); } catch (_) {}
+export function resetDecisions(teamNumber, period, defaultDecisions) {
+  return saveDecisions(teamNumber, period, JSON.parse(JSON.stringify(defaultDecisions)));
 }
 
-// ── Decisions (per period) ────────────────────────────────────────────────────
+// ── Submitted state ───────────────────────────────────────────────────────────
 
-export function saveDecisions(period, decisions) {
+export function markSubmitted(teamNumber, period, meta) {
   try {
-    const all = loadAllDecisions();
-    all[period] = decisions;
-    localStorage.setItem(KEY_DECISIONS, JSON.stringify(all));
+    localStorage.setItem(subKey(teamNumber, period), JSON.stringify({
+      ...meta,
+      timestamp: new Date().toISOString(),
+    }));
     return true;
   } catch (_) { return false; }
 }
 
-export function loadDecisions(period) {
+export function isSubmitted(teamNumber, period) {
   try {
-    const all = loadAllDecisions();
-    return all[period] || null;
+    return !!localStorage.getItem(subKey(teamNumber, period));
+  } catch (_) { return false; }
+}
+
+export function getSubmitMeta(teamNumber, period) {
+  try {
+    const raw = localStorage.getItem(subKey(teamNumber, period));
+    return raw ? JSON.parse(raw) : null;
   } catch (_) { return null; }
 }
 
-export function loadAllDecisions() {
+export function unmarkSubmitted(teamNumber, period) {
   try {
-    const raw = localStorage.getItem(KEY_DECISIONS);
-    return raw ? JSON.parse(raw) : {};
+    localStorage.removeItem(subKey(teamNumber, period));
+    return true;
+  } catch (_) { return false; }
+}
+
+// ── Load all decisions for a team (all periods) ───────────────────────────────
+// Returns { [period]: decisions } for use in ReportsPage.
+export function loadAllDecisions(teamNumber) {
+  try {
+    const prefix = `topaz:team${teamNumber}:`;
+    const result = {};
+    for (const key of Object.keys(localStorage)) {
+      if (key.startsWith(prefix) && key.endsWith(':decisions')) {
+        const parts = key.split(':'); // ['topaz','teamN','periodP','decisions']
+        const pStr = parts[2]?.replace('period', '');
+        const p = parseInt(pStr, 10);
+        if (!Number.isNaN(p)) {
+          const raw = localStorage.getItem(key);
+          if (raw) result[p] = JSON.parse(raw);
+        }
+      }
+    }
+    return result;
   } catch (_) { return {}; }
 }
 
-export function resetDecisions(period, defaultDecisions) {
+// ── Full reset for one team ───────────────────────────────────────────────────
+
+export function resetAll(teamNumber) {
   try {
-    const all = loadAllDecisions();
-    all[period] = JSON.parse(JSON.stringify(defaultDecisions));
-    localStorage.setItem(KEY_DECISIONS, JSON.stringify(all));
-    return true;
-  } catch (_) { return false; }
-}
-
-// ── Submitted periods ─────────────────────────────────────────────────────────
-
-export function markSubmitted(period, meta) {
-  try {
-    const all = loadAllSubmitted();
-    all[period] = { ...meta, timestamp: new Date().toISOString() };
-    localStorage.setItem(KEY_SUBMITTED, JSON.stringify(all));
-    return true;
-  } catch (_) { return false; }
-}
-
-export function loadAllSubmitted() {
-  try {
-    const raw = localStorage.getItem(KEY_SUBMITTED);
-    return raw ? JSON.parse(raw) : {};
-  } catch (_) { return {}; }
-}
-
-export function isSubmitted(period) {
-  try {
-    const all = loadAllSubmitted();
-    return !!all[period];
-  } catch (_) { return false; }
-}
-
-export function getSubmitMeta(period) {
-  try {
-    const all = loadAllSubmitted();
-    return all[period] || null;
-  } catch (_) { return null; }
-}
-
-export function unmarkSubmitted(period) {
-  try {
-    const all = loadAllSubmitted();
-    delete all[period];
-    localStorage.setItem(KEY_SUBMITTED, JSON.stringify(all));
-    return true;
-  } catch (_) { return false; }
-}
-
-// ── Full reset ────────────────────────────────────────────────────────────────
-
-export function resetAll() {
-  try {
-    localStorage.removeItem(KEY_DECISIONS);
-    localStorage.removeItem(KEY_SUBMITTED);
+    // Remove all keys for this team across all periods
+    const prefix = `topaz:team${teamNumber}:`;
+    Object.keys(localStorage)
+      .filter(k => k.startsWith(prefix))
+      .forEach(k => localStorage.removeItem(k));
     return true;
   } catch (_) { return false; }
 }

@@ -9,6 +9,11 @@ const sessionSchema = new mongoose.Schema(
     startedAt: { type: Date, default: Date.now },
     completedAt: { type: Date, default: null },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    // Fields shown read-only on the team decision form header
+    simulationCode: { type: String, default: '' },
+    groupNumber: { type: String, default: '' },
+    startYear: { type: Number, default: 2024 },
+    startQuarter: { type: Number, min: 1, max: 4, default: 1 },
   },
   { timestamps: true }
 );

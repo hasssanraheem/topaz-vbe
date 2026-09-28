@@ -7,6 +7,8 @@ const userSchema = new mongoose.Schema(
     role: { type: String, enum: ['admin', 'team'], required: true },
     // null for admin; ObjectId ref to Team for team users
     team: { type: mongoose.Schema.Types.ObjectId, ref: 'Team', default: null },
+    // Updated on every /api/me call; used by admin to show team activity status
+    lastSeenAt: { type: Date, default: null },
   },
   { timestamps: true }
 );

@@ -6,55 +6,49 @@ import { recalcSummary } from '../logic/calculations.js';
 
 function gbp(v) { return v != null ? `£${Number(v).toLocaleString('en-GB')}` : '—'; }
 
-export default function ReviewPage({ dec, onNavigate, period, periodData, submitted }) {
+export default function ReviewPage({ dec, onNavigate, period, periodData, submitted, quarter }) {
   const context = {
-    machines: periodData?.resources?.machinesAvailable || 6,
+    machines:        periodData?.resources?.machinesAvailable || 6,
     assemblyWorkers: periodData?.resources?.personnel?.assemblyWorkers?.nextQtr || 40,
-    salespeople: periodData?.resources?.personnel?.salespeople?.nextQtr || 6,
-    reserves: periodData?.accounts?.reserves || 0,
+    salespeople:     periodData?.resources?.personnel?.salespeople?.nextQtr || 6,
+    reserves:        periodData?.accounts?.reserves || 0,
     prevAssemblyWage: periodData?.decisions?.assemblyWage || 8.50,
-    vehicles: periodData?.resources?.vehiclesAvailable || 4,
-    quarter: ((period - 1) % 4) + 1,
+    vehicles:        periodData?.resources?.vehiclesAvailable || 4,
+    quarter:         quarter || ((period - 1) % 4) + 1,
   };
 
   const { valid, errors, warnings } = validateAll(dec, context);
   const summary = recalcSummary(dec, periodData);
-
   const hasErrors = Object.keys(errors).length > 0;
 
   return (
     <div>
       <h2>Review Decisions — Period {period}</h2>
-      {submitted && <div className="locked-notice">This period has been submitted. Read-only view.</div>}
+      {submitted && <div className="locked-notice">Submitted. Read-only view.</div>}
 
-      {/* Validation status */}
       {!submitted && (
         <div className={`review-status ${hasErrors ? 'review-errors' : 'review-ok'}`}>
           {hasErrors
-            ? `There are ${Object.keys(errors).length} validation error(s). Please fix before submitting.`
-            : `All decisions are valid. ${warnings.length > 0 ? `${warnings.length} warning(s) noted below.` : 'Ready to submit.'}`}
+            ? `${Object.keys(errors).length} validation error(s) — fix before submitting.`
+            : `All decisions valid. ${warnings.length > 0 ? `${warnings.length} warning(s) noted.` : 'Ready to submit.'}`}
         </div>
       )}
 
-      {/* Errors */}
       {!submitted && hasErrors && (
         <div className="review-error-list">
           <strong>Errors:</strong>
           <ul>
             {Object.entries(errors).map(([key, msg]) => (
-              <li key={key}><span style={{ color: 'red' }}>{key}</span>: {msg}</li>
+              <li key={key}><span style={{ color: 'red' }}>{key}</span>: {typeof msg === 'object' ? JSON.stringify(msg) : msg}</li>
             ))}
           </ul>
         </div>
       )}
 
-      {/* Warnings */}
       {warnings.length > 0 && (
         <div className="review-warning-list">
           <strong>Warnings:</strong>
-          <ul>
-            {warnings.map((w, i) => <li key={i}>{w}</li>)}
-          </ul>
+          <ul>{warnings.map((w, i) => <li key={i}>{w}</li>)}</ul>
         </div>
       )}
 
@@ -68,19 +62,19 @@ export default function ReviewPage({ dec, onNavigate, period, periodData, submit
         } />
       </section>
 
-      {/* Advertising */}
+      {/* Promotion */}
       <section className="review-section">
-        <h3>Advertising (£)</h3>
-        <DataTable headers={['Product', ...AREAS]} rows={
-          PRODUCTS.map((prod, p) => ({
-            cells: [prod, ...(dec.advertising?.[p] || [0,0,0,0]).map(gbp)]
-          }))
-        } />
+        <h3>Promotion Expenditure (£)</h3>
+        <DataTable headers={['Type', ...PRODUCTS]} rows={[
+          { cells: ['Trade Press',    ...(dec.promotion?.tradePres     || [0,0,0]).map(gbp)] },
+          { cells: ['Ad Support',     ...(dec.promotion?.adSupport     || [0,0,0]).map(gbp)] },
+          { cells: ['Merchandising',  ...(dec.promotion?.merchandising || [0,0,0]).map(gbp)] },
+        ]} />
       </section>
 
       {/* Delivery Schedule */}
       <section className="review-section">
-        <h3>Delivery Schedule (units)</h3>
+        <h3>Delivery Schedule (units) — area order: {AREAS.join(', ')}</h3>
         <DataTable headers={['Product', ...AREAS, 'Total']} rows={
           PRODUCTS.map((prod, p) => {
             const row = dec.deliverySchedule?.[p] || [0,0,0,0];
@@ -90,19 +84,16 @@ export default function ReviewPage({ dec, onNavigate, period, periodData, submit
         } />
       </section>
 
-      {/* Calculated Summary */}
+      {/* Estimated summary */}
       <section className="review-section">
-        <h3>Estimated Outcome (simplified)</h3>
-        <div className="demo-notice">
-          These estimates use the simplified educational demand model, not the official Topaz-VBE engine.
-          Treat them as rough indicators only.
-        </div>
+        <h3>Estimated Outcome (simplified model)</h3>
+        <div className="demo-notice">Uses simplified educational model — not the official Topaz-VBE engine.</div>
         <DataTable headers={['Item', 'Estimate']} rows={[
-          { cells: ['Estimated Revenue', gbp(summary.estimatedRevenue)] },
-          { cells: ['Estimated Personnel Costs', gbp(summary.personnelCosts)] },
-          { cells: ['Estimated Production Costs', gbp(summary.productionCosts)] },
-          { cells: ['Estimated Overheads', gbp(summary.overheads)] },
-          { cells: ['Estimated Net Profit/(Loss)', gbp(summary.netProfit)] },
+          { cells: ['Revenue',           gbp(summary.estimatedRevenue)] },
+          { cells: ['Personnel Costs',   gbp(summary.personnelCosts)] },
+          { cells: ['Production Costs',  gbp(summary.productionCosts)] },
+          { cells: ['Overheads',         gbp(summary.overheads)] },
+          { cells: ['Net Profit/(Loss)', gbp(summary.netProfit)] },
         ]} />
       </section>
 
@@ -110,14 +101,16 @@ export default function ReviewPage({ dec, onNavigate, period, periodData, submit
       <section className="review-section">
         <h3>Other Decisions</h3>
         <DataTable headers={['Decision', 'Value']} rows={[
-          { cells: ['Shift Level', dec.shiftLevel || '—'] },
-          { cells: ['Assembly Workers Wage', dec.assemblyWage ? `£${Number(dec.assemblyWage).toFixed(2)}/hr` : '—'] },
-          { cells: ['Days Credit', dec.daysCredit != null ? `${dec.daysCredit} days` : '—'] },
-          { cells: ['Salesperson Salary', gbp(dec.salespersonSalary)] },
-          { cells: ['Sales Commission', dec.salesCommission != null ? `${dec.salesCommission}%` : '—'] },
-          { cells: ['Management Budget', gbp(dec.managementBudget)] },
-          { cells: ['Dividend Rate', dec.dividendRate != null ? `${dec.dividendRate}p/share` : '—'] },
-          { cells: ['Vans to Buy/Sell', dec.vansBuySell != null ? dec.vansBuySell : '—'] },
+          { cells: ['Shift Level',         dec.shiftLevel || '—'] },
+          { cells: ['Assembly Wage',        dec.assemblyWage ? `£${Number(dec.assemblyWage).toFixed(2)}/hr` : '—'] },
+          { cells: ['Days Credit',          dec.daysCredit != null ? `${dec.daysCredit} days` : '—'] },
+          { cells: ['Salesperson Salary',   gbp(dec.salespersonSalary)] },
+          { cells: ['Sales Commission',     dec.salesCommission != null ? `${dec.salesCommission}%` : '—'] },
+          { cells: ['Management Budget',    gbp(dec.managementBudget)] },
+          { cells: ['Dividend Rate',        dec.dividendRate != null ? `${dec.dividendRate}p/share` : '—'] },
+          { cells: ['Vans to Buy',          dec.vansToBuy ?? '—'] },
+          { cells: ['Vans to Sell',         dec.vansToSell ?? '—'] },
+          { cells: ['Research Exp (total)', gbp((dec.researchExp || [0,0,0]).reduce((s,v) => s + (Number(v)||0), 0))] },
         ]} />
       </section>
 
@@ -126,7 +119,11 @@ export default function ReviewPage({ dec, onNavigate, period, periodData, submit
           <Button onClick={() => onNavigate('submit')} disabled={hasErrors}>
             Proceed to Submit
           </Button>
-          {hasErrors && <span style={{ marginLeft: 12, color: 'red', fontSize: '0.88em' }}>Fix errors above before submitting.</span>}
+          {hasErrors && (
+            <span style={{ marginLeft: 12, color: 'red', fontSize: '0.88em' }}>
+              Fix errors above before submitting.
+            </span>
+          )}
         </div>
       )}
     </div>

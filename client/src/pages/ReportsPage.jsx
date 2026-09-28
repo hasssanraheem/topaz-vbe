@@ -9,10 +9,10 @@ function num(v) { return v != null ? Number(v).toLocaleString('en-GB') : '—'; 
 
 function getP(n) { return PERIODS[n] || PERIODS[1]; }
 
-export default function ReportsPage({ sub, onNavigate }) {
+export default function ReportsPage({ sub, onNavigate, teamNumber }) {
   const [period, setPeriod] = useState(1);
   const pData = getP(period);
-  const allDec = loadAllDecisions();
+  const allDec = loadAllDecisions(teamNumber || 1);
   const dec = allDec[period] || {};
   const accounts = pData.accounts || {};
   const resources = pData.resources || {};

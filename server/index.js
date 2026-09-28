@@ -6,6 +6,12 @@ const connectDB = require('./src/config/db');
 // Initialise Firebase Admin (must happen before any route imports it)
 require('./src/config/firebase');
 
+// Register all Mongoose models before any route uses populate()
+require('./src/models/Team');
+require('./src/models/User');
+require('./src/models/Session');
+require('./src/models/Report');
+
 const authRoutes = require('./src/routes/auth');
 const adminRoutes = require('./src/routes/admin');
 

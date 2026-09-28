@@ -12,8 +12,8 @@ async function verifyToken(req, res, next) {
   const idToken = authHeader.split('Bearer ')[1];
 
   try {
-    // 1. Verify the token with Firebase Admin — rejects expired/invalid tokens
-    const decoded = await admin.auth().verifyIdToken(idToken);
+    // 1. Verify the token with Firebase Admin — checkRevoked:true rejects revoked sessions immediately
+    const decoded = await admin.auth().verifyIdToken(idToken, true);
 
     // 2. Check the uid exists in our own MongoDB — rejects users not in our system
     const user = await User.findOne({ firebaseUid: decoded.uid }).populate('team');
