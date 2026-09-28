@@ -443,6 +443,17 @@ input[type="checkbox"].field-check {
 }
 
 /* ── Login page ───────────────────────────────────────────────────────── */
+/* ── Server wake notice (Render cold start) ───────────────────────────── */
+.server-wake-notice {
+  background: #fffde7;
+  border: 1px solid #ffd600;
+  color: #5d4037;
+  font-size: 0.85em;
+  padding: 8px 14px;
+  margin: 0 14px 10px;
+  border-radius: 3px;
+}
+
 .login-wrap {
   max-width: 420px;
   margin: 2em auto;
