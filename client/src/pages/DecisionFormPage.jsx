@@ -92,6 +92,7 @@ export default function DecisionFormPage({ dec, onChange, teamNumber, period, di
     const promotion = {
       tradePres:     [...(dec.promotion?.tradePres     || [0,0,0])],
       adSupport:     [...(dec.promotion?.adSupport     || [0,0,0])],
+      support:       [...(dec.promotion?.support       || [0,0,0])],
       merchandising: [...(dec.promotion?.merchandising || [0,0,0])],
     };
     promotion[type][p] = v;
@@ -253,7 +254,8 @@ export default function DecisionFormPage({ dec, onChange, teamNumber, period, di
             </thead><tbody>
               {[
                 { key: 'tradePres',     label: 'Trade Press' },
-                { key: 'adSupport',     label: 'Advertising Support' },
+                { key: 'adSupport',     label: 'Advertising' },
+                { key: 'support',       label: 'Support' },
                 { key: 'merchandising', label: 'Merchandising' },
               ].map(({ key, label }) => (
                 <tr key={key}>

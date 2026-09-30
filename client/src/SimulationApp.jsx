@@ -29,6 +29,7 @@ export default function SimulationApp({ teamNumber, appUser, onLogout }) {
     loadDecisions(teamNumber, DEFAULT_PERIOD) || { ...DEFAULT_DECISIONS }
   );
   const [submitted, setSubmitted] = useState(() => isSubmitted(teamNumber, DEFAULT_PERIOD));
+  const [quarterStatus, setQuarterStatus] = useState(null); // 'open' | 'locked' | 'processing' | 'published' | null
   const navigate = useNavigate();
   const { logout } = useAuth();
 
@@ -41,6 +42,20 @@ export default function SimulationApp({ teamNumber, appUser, onLogout }) {
     startYear:      2024,
     startQuarter:   1,
   };
+
+  // ── Load decisions from server on mount ───────────────────────────────────
+  useEffect(() => {
+    apiFetch('/api/decisions')
+      .then(data => {
+        if (data?.data) {
+          setDec(data.data);
+          saveDecisions(teamNumber, DEFAULT_PERIOD, data.data); // keep localStorage in sync
+        }
+        if (data?.submitted) setSubmitted(true);
+        if (data?.quarterStatus) setQuarterStatus(data.quarterStatus);
+      })
+      .catch(() => {}); // fall back to localStorage value already in state
+  }, [teamNumber]);
 
   // ── Heartbeat: detect if admin revoked this session ───────────────────────
   // Polls /api/me every 60 s and on tab focus.
@@ -75,7 +90,10 @@ export default function SimulationApp({ teamNumber, appUser, onLogout }) {
 
   function handleDecChange(newDec) {
     setDec(newDec);
-    saveDecisions(teamNumber, currentPeriod, newDec);
+    saveDecisions(teamNumber, currentPeriod, newDec); // localStorage fallback
+    // Sync to server in background (fire-and-forget; errors are non-fatal)
+    apiFetch('/api/decisions', { method: 'PUT', body: JSON.stringify({ data: newDec }) })
+      .catch(() => {}); // silently ignore if no open quarter or offline
   }
 
   function handleSubmitted() { setSubmitted(true); }

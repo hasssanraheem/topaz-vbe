@@ -1,22 +1,171 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import DataTable from '../components/DataTable.jsx';
 import PeriodSelector from '../components/PeriodSelector.jsx';
 import { PERIODS, PRODUCTS, AREAS, COMPETITORS } from '../data/mockData.js';
 import { loadAllDecisions } from '../logic/storage.js';
+import { apiFetch } from '../lib/api.js';
 
-function gbp(v) { return v != null ? `£${Number(v).toLocaleString('en-GB')}` : '—'; }
+function gbp(v) { return v != null ? `£${Number(v).toLocaleString('en-GB', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}` : '—'; }
 function num(v) { return v != null ? Number(v).toLocaleString('en-GB') : '—'; }
+function pct(v) { return v != null ? `${(Number(v) * 100).toFixed(1)}%` : '—'; }
 
 function getP(n) { return PERIODS[n] || PERIODS[1]; }
 
+/**
+ * Map the engine's report object (snake_case) to the display data shape
+ * (accounts, resources, productStats, overheadCosts) used by sub-components.
+ */
+function engineReportToDisplay(r) {
+  if (!r) return null;
+  const pnl = r.pnl || {};
+  const bs  = r.balance_sheet || {};
+  const cf  = r.cash_flow || {};
+  const oh  = r.overheads || {};
+  const res = r.resources || {};
+
+  const accounts = {
+    salesRevenue:      pnl.sales_revenue,
+    costOfSales:       pnl.cost_of_sales,
+    grossProfit:       pnl.gross_profit,
+    totalOverheads:    pnl.total_overheads,
+    netProfitBeforeTax:pnl.profit_before_tax,
+    corporationTax:    pnl.tax_assessed,
+    netProfit:         pnl.net_profit,
+    dividendsPaid:     pnl.dividend_paid,
+    retainedProfit:    pnl.retained_profit,
+
+    // Balance sheet
+    machinesAtCost:    bs.machines,
+    machineDepnAccum:  null,
+    machinesNBV:       bs.machines,
+    vehiclesAtCost:    bs.vehicles,
+    vehicleDepnAccum:  null,
+    vehiclesNBV:       bs.vehicles,
+    fixedAssets:       bs.fixed_assets,
+    productStocks:     bs.product_stocks,
+    materialStocks:    bs.material_stocks,
+    debtors:           bs.debtors,
+    cashInvested:      bs.cash_invested,
+    currentAssets:     (bs.product_stocks || 0) + (bs.material_stocks || 0) + (bs.debtors || 0) + (bs.cash_invested || 0),
+    totalAssets:       bs.total_assets,
+    taxDue:            bs.tax_due,
+    creditors:         bs.creditors,
+    bankOverdraft:     bs.bank_overdraft,
+    currentLiabilities:bs.current_liabilities,
+    netAssets:         bs.net_assets,
+    shareCapital:      bs.share_capital,
+    reserves:          bs.reserves,
+    netWorth:          bs.net_worth,
+
+    // Cash flow
+    tradingReceipts:   cf.trading_receipts,
+    tradingPayments:   cf.trading_payments,
+    netCashFlow:       cf.net_operating,
+    capitalExpenditure:cf.capital_payments,
+    taxPayments:       cf.tax_paid,
+    netCashMovement:   cf.net_cash_flow,
+    bankOverdraftBF:   null,
+    overdraftLimitNext:bs.overdraft_limit,
+  };
+
+  const resources = {
+    machinesAvailable: res.machines?.owned,
+    vehiclesAvailable: res.vehicles?.owned,
+    personnel: {
+      salespeople:    { nextQtr: Object.values(r.decisions?.salespeople || {}).reduce((s, v) => s + v, 0) },
+      assemblyWorkers:{ nextQtr: res.assembly?.workers },
+      machinists:     { nextQtr: res.machines?.machinists },
+    },
+  };
+
+  // products array: [{product, area, sales, closing_stock, price, ...}]
+  const prods = r.products || [];
+  const productStats = {
+    sales:    PRODUCTS.map((_, pi) => {
+      const p = pi + 1;
+      return prods.filter(x => x.product === p).reduce((s, x) => s + (x.sales || 0), 0);
+    }),
+    revenue:  PRODUCTS.map((_, pi) => {
+      const p = pi + 1;
+      return prods.filter(x => x.product === p).reduce((s, x) => s + (x.sales || 0) * (x.price || 0), 0);
+    }),
+    avgPrice: PRODUCTS.map((_, pi) => {
+      const rows = prods.filter(x => x.product === pi + 1 && x.sales > 0);
+      if (!rows.length) return null;
+      const totSales = rows.reduce((s, x) => s + x.sales, 0);
+      const totRev   = rows.reduce((s, x) => s + x.sales * x.price, 0);
+      return totSales ? totRev / totSales : null;
+    }),
+    quality: PRODUCTS.map(() => '—'),
+    stockByArea: AREAS.map((area, ai) => {
+      return PRODUCTS.map((_, pi) => {
+        const row = prods.find(x => x.product === pi + 1 && x.area === area.toLowerCase());
+        return row?.closing_stock || 0;
+      });
+    }),
+    improvements: PRODUCTS.map((_, pi) => {
+      const row = prods.find(x => x.product === pi + 1);
+      return row?.improvement ? 'Implemented' : 'None';
+    }),
+  };
+
+  const overheadCosts = {
+    salespersonSalaries: null,
+    salesCommission:     null,
+    managementBudget:    oh.management,
+    productDevelopment:  oh.research,
+    advertising:         oh.advertising,
+    businessIntelligence:oh.info_charges,
+    recruitmentCosts:    null,
+    dismissalCosts:      null,
+    trainingCosts:       null,
+    machineDepreciation: null,
+    vehicleDepreciation: null,
+    maintenanceContracted:  oh.maintenance,
+    maintenanceUncontracted:null,
+    externalStorage:     oh.warehousing,
+    bankCharges:         null,
+    totalOverheads:      oh.total,
+  };
+
+  const group = r.group || {};
+
+  return { accounts, resources, productStats, overheadCosts, group, meta: r.meta };
+}
+
 export default function ReportsPage({ sub, onNavigate, teamNumber }) {
   const [period, setPeriod] = useState(1);
+  const [serverReport, setServerReport] = useState(null); // { accounts, resources, ... } or null
+  const [reportRound, setReportRound] = useState(null);
+  const [loadingReport, setLoadingReport] = useState(true);
+
   const pData = getP(period);
   const allDec = loadAllDecisions(teamNumber || 1);
   const dec = allDec[period] || {};
-  const accounts = pData.accounts || {};
-  const resources = pData.resources || {};
-  const productStats = pData.productStats || {};
+  const accounts = serverReport?.accounts || pData.accounts || {};
+  const resources = serverReport?.resources || pData.resources || {};
+  const productStats = serverReport?.productStats || pData.productStats || {};
+  const overheadCosts = serverReport?.overheadCosts || pData.overheadCosts || {};
+  const group = serverReport?.group || null;
+
+  const isLive = Boolean(serverReport);
+
+  // Fetch latest published report from server
+  useEffect(() => {
+    setLoadingReport(true);
+    apiFetch('/api/decisions/report')
+      .then(data => {
+        if (data?.report) {
+          const display = engineReportToDisplay(data.report);
+          setServerReport(display);
+          setReportRound(data.round);
+        } else {
+          setServerReport(null);
+        }
+      })
+      .catch(() => setServerReport(null))
+      .finally(() => setLoadingReport(false));
+  }, []);
 
   const SUB_REPORTS = [
     { key: 'decisions-made', label: 'Decisions Made' },
@@ -37,11 +186,11 @@ export default function ReportsPage({ sub, onNavigate, teamNumber }) {
       case 'decisions-made':
         return <DecisionsMadeReport dec={dec} pData={pData} />;
       case 'resources':
-        return <ResourcesReport pData={pData} />;
+        return <ResourcesReport resources={resources} productStats={productStats} />;
       case 'product-stats':
-        return <ProductStatsReport pData={pData} />;
+        return <ProductStatsReport productStats={productStats} />;
       case 'overhead-costs':
-        return <OverheadCostsReport pData={pData} />;
+        return <OverheadCostsReport overheadCosts={overheadCosts} />;
       case 'pnl':
         return <PnLReport accounts={accounts} />;
       case 'balance-sheet':
@@ -49,9 +198,9 @@ export default function ReportsPage({ sub, onNavigate, teamNumber }) {
       case 'cash-flow':
         return <CashFlowReport accounts={accounts} />;
       case 'group-info':
-        return <GroupInfoReport />;
+        return <GroupInfoReport group={group} />;
       case 'performance':
-        return <PerformanceReport pData={pData} />;
+        return <PerformanceReport pData={pData} accounts={accounts} group={group} />;
       default:
         return <p>Select a report from the sub-menu.</p>;
     }
@@ -60,11 +209,21 @@ export default function ReportsPage({ sub, onNavigate, teamNumber }) {
   return (
     <div>
       <h2>Reports</h2>
-      <div className="demo-notice">Demonstration data — not official Topaz-VBE data.</div>
+      {loadingReport ? (
+        <div className="demo-notice">Loading reports…</div>
+      ) : isLive ? (
+        <div className="demo-notice" style={{ background: '#e6f4ea', color: '#1a5c2e', borderColor: '#8bc8a0' }}>
+          Live results — Quarter {reportRound}
+        </div>
+      ) : (
+        <div className="demo-notice">Demonstration data — no published results yet.</div>
+      )}
 
-      <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 8 }}>
-        <PeriodSelector value={period} onChange={setPeriod} />
-      </div>
+      {!isLive && (
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 8 }}>
+          <PeriodSelector value={period} onChange={setPeriod} />
+        </div>
+      )}
 
       <div className="sub-nav-tabs">
         {SUB_REPORTS.map(r => (
@@ -98,7 +257,6 @@ function DecisionsMadeReport({ dec, pData }) {
         { cells: ['Sales Commission', dec.salesCommission != null ? `${dec.salesCommission}%` : '—'] },
         { cells: ['Management Budget', dec.managementBudget ? gbp(dec.managementBudget) : '—'] },
         { cells: ['Dividend Rate', dec.dividendRate != null ? `${dec.dividendRate}p/share` : '—'] },
-        { cells: ['Vans (buy/sell)', dec.vansBuySell != null ? dec.vansBuySell : '—'] },
         { cells: ['Contract Maintenance hrs/machine', dec.contractMaintenance || '—'] },
         { cells: ['Machines to Sell', dec.machinesToSell || 0] },
         { cells: ['Machines to Order', dec.machinesToOrder || 0] },
@@ -106,38 +264,32 @@ function DecisionsMadeReport({ dec, pData }) {
         { cells: ['Buy Competitor Info', dec.buyCompetitorInfo ? 'Yes' : 'No'] },
         { cells: ['Buy Market Shares Info', dec.buyMarketShares ? 'Yes' : 'No'] },
       ]} />
-      <h4>Prices — Home (£)</h4>
-      <DataTable headers={['Product', ...PRODUCTS]} rows={[
+      <h4>Prices (£)</h4>
+      <DataTable headers={['Market', ...PRODUCTS]} rows={[
         { cells: ['Home', ...(dec.prices?.home || []).map(v => gbp(v))] },
         { cells: ['Export', ...(dec.prices?.export || []).map(v => gbp(v))] },
       ]} />
-      <h4>Advertising (£)</h4>
-      <DataTable headers={['Product', ...AREAS]} rows={
-        PRODUCTS.map((prod, p) => ({
-          cells: [prod, ...(dec.advertising?.[p] || [0,0,0,0]).map(gbp)]
-        }))
-      } />
     </div>
   );
 }
 
-function ResourcesReport({ pData }) {
-  const r = pData.resources || {};
+function ResourcesReport({ resources, productStats }) {
+  const r = resources || {};
   const pers = r.personnel || {};
   return (
     <div>
       <h3>Resources Employed</h3>
       <DataTable headers={['Resource', 'Value']} rows={[
-        { cells: ['Machines Available', r.machinesAvailable || '—'] },
-        { cells: ['Vehicles Available', r.vehiclesAvailable || '—'] },
+        { cells: ['Machines Available', r.machinesAvailable ?? '—'] },
+        { cells: ['Vehicles Available', r.vehiclesAvailable ?? '—'] },
         { cells: ['Salespeople', pers.salespeople?.nextQtr ?? '—'] },
         { cells: ['Assembly Workers', pers.assemblyWorkers?.nextQtr ?? '—'] },
         { cells: ['Machinists', pers.machinists?.nextQtr ?? '—'] },
       ]} />
-      <h4>Product Stocks by Area (units)</h4>
+      <h4>Product Closing Stocks by Area (units)</h4>
       <DataTable headers={['Product', ...AREAS, 'Total']} rows={
         PRODUCTS.map((prod, p) => {
-          const stock = pData.productStats?.stockByArea?.[p] || [0,0,0,0];
+          const stock = productStats?.stockByArea?.map(areaStocks => areaStocks[p]) || [0,0,0,0];
           const total = stock.reduce((s, v) => s + v, 0);
           return { cells: [prod, ...stock.map(num), num(total)] };
         })
@@ -146,28 +298,18 @@ function ResourcesReport({ pData }) {
   );
 }
 
-function ProductStatsReport({ pData }) {
-  const ps = pData.productStats || {};
+function ProductStatsReport({ productStats }) {
+  const ps = productStats || {};
   return (
     <div>
       <h3>Product Statistics</h3>
-      <DataTable headers={['Product', 'Sales (units)', 'Revenue (£)', 'Avg Price (£)', 'Quality']} rows={
+      <DataTable headers={['Product', 'Sales (units)', 'Revenue (£)', 'Avg Price (£)', 'Improvement']} rows={
         PRODUCTS.map((prod, p) => ({
           cells: [
             prod,
             num(ps.sales?.[p]),
             gbp(ps.revenue?.[p]),
             gbp(ps.avgPrice?.[p]),
-            ps.quality?.[p] || '—',
-          ]
-        }))
-      } />
-      <DataTable headers={['Product', 'Dev Spend', 'Dev Status', 'Improvement']} rows={
-        PRODUCTS.map((prod, p) => ({
-          cells: [
-            prod,
-            gbp(ps.devSpend?.[p]),
-            ps.devStatus?.[p] || '—',
             ps.improvements?.[p] || '—',
           ]
         }))
@@ -176,8 +318,8 @@ function ProductStatsReport({ pData }) {
   );
 }
 
-function OverheadCostsReport({ pData }) {
-  const oc = pData.overheadCosts || {};
+function OverheadCostsReport({ overheadCosts }) {
+  const oc = overheadCosts || {};
   return (
     <div>
       <h3>Overhead Costs Analysis</h3>
@@ -185,7 +327,7 @@ function OverheadCostsReport({ pData }) {
         { cells: ['Salesperson Salaries', gbp(oc.salespersonSalaries)] },
         { cells: ['Sales Commission', gbp(oc.salesCommission)] },
         { cells: ['Management Budget', gbp(oc.managementBudget)] },
-        { cells: ['Product Development', gbp(oc.productDevelopment)] },
+        { cells: ['Product Development / Research', gbp(oc.productDevelopment)] },
         { cells: ['Advertising', gbp(oc.advertising)] },
         { cells: ['Business Intelligence', gbp(oc.businessIntelligence)] },
         { cells: ['Recruitment Costs', gbp(oc.recruitmentCosts)] },
@@ -194,8 +336,7 @@ function OverheadCostsReport({ pData }) {
         { cells: ['Machine Depreciation', gbp(oc.machineDepreciation)] },
         { cells: ['Vehicle Depreciation', gbp(oc.vehicleDepreciation)] },
         { cells: ['Maintenance (contracted)', gbp(oc.maintenanceContracted)] },
-        { cells: ['Maintenance (uncontracted)', gbp(oc.maintenanceUncontracted)] },
-        { cells: ['External Storage', gbp(oc.externalStorage)] },
+        { cells: ['External Storage / Warehousing', gbp(oc.externalStorage)] },
         { cells: ['Bank Charges / Overdraft Interest', gbp(oc.bankCharges)] },
         { cells: ['Total Overheads', gbp(oc.totalOverheads)], total: true },
       ]} />
@@ -228,12 +369,8 @@ function BalanceSheetReport({ accounts }) {
       <h3>Balance Sheet</h3>
       <h4>Fixed Assets</h4>
       <DataTable headers={['Item', 'Amount (£)']} rows={[
-        { cells: ['Machines at cost', gbp(accounts.machinesAtCost)] },
-        { cells: ['Less: Accumulated Depreciation', gbp(accounts.machineDepnAccum)] },
-        { cells: ['Net Book Value — Machines', gbp(accounts.machinesNBV)], total: true },
-        { cells: ['Vehicles at cost', gbp(accounts.vehiclesAtCost)] },
-        { cells: ['Less: Accumulated Depreciation', gbp(accounts.vehicleDepnAccum)] },
-        { cells: ['Net Book Value — Vehicles', gbp(accounts.vehiclesNBV)], total: true },
+        { cells: ['Machines (NBV)', gbp(accounts.machinesNBV)] },
+        { cells: ['Vehicles (NBV)', gbp(accounts.vehiclesNBV)] },
         { cells: ['Total Fixed Assets', gbp(accounts.fixedAssets)], total: true },
       ]} />
       <h4>Current Assets</h4>
@@ -267,51 +404,106 @@ function CashFlowReport({ accounts }) {
       <DataTable headers={['Item', 'Amount (£)']} rows={[
         { cells: ['Trading Receipts (cash in)', gbp(accounts.tradingReceipts)] },
         { cells: ['Trading Payments (cash out)', gbp(accounts.tradingPayments)] },
-        { cells: ['Net Trading Cash Flow', gbp(accounts.netCashFlow)], total: true },
+        { cells: ['Net Operating Cash Flow', gbp(accounts.netCashFlow)], total: true },
         { cells: ['Capital Expenditure', gbp(accounts.capitalExpenditure)] },
         { cells: ['Tax Payments', gbp(accounts.taxPayments)] },
         { cells: ['Dividends Paid', gbp(accounts.dividendsPaid)] },
         { cells: ['Net Cash Movement', gbp(accounts.netCashMovement)], total: true },
-        { cells: ['Bank Overdraft b/f', gbp(accounts.bankOverdraftBF)] },
-        { cells: ['Bank Overdraft c/f', gbp(accounts.bankOverdraft)], total: true },
-        { cells: ['Cash Invested', gbp(accounts.cashInvested)] },
+        { cells: ['Cash Invested c/f', gbp(accounts.cashInvested)] },
         { cells: ['Overdraft Limit (next quarter)', gbp(accounts.overdraftLimitNext)] },
       ]} />
     </div>
   );
 }
 
-function GroupInfoReport() {
+function GroupInfoReport({ group }) {
+  if (!group?.companies) {
+    // Fall back to mock competitors
+    return (
+      <div>
+        <h3>Group Information</h3>
+        <p style={{ fontSize: '0.85em', color: '#555', marginBottom: 8 }}>
+          Mock competitor data — no published results yet.
+        </p>
+        <DataTable headers={['Company', 'Net Worth (£)', 'Net Profit (£)', 'Share Price (£)']} rows={
+          COMPETITORS.map(c => ({
+            cells: [c.name, gbp(c.netWorth), gbp(c.netProfit), gbp(c.sharePrice)]
+          }))
+        } />
+      </div>
+    );
+  }
+
+  const companies = group.companies || [];
+  const ms = group.market_shares || {};
+
   return (
     <div>
       <h3>Group Information</h3>
-      <p style={{ fontSize: '0.85em', color: '#555', marginBottom: 8 }}>
-        Mock competitor data — not from the live Topaz-VBE system.
-      </p>
-      <DataTable headers={['Company', 'Net Worth (£)', 'Sales Revenue (£)', 'Net Profit (£)', 'Share Price (£)']} rows={
-        COMPETITORS.map(c => ({
-          cells: [c.name, gbp(c.netWorth), gbp(c.salesRevenue), gbp(c.netProfit), gbp(c.sharePrice)]
-        }))
-      } />
+      <h4>Company Summary</h4>
+      <DataTable
+        headers={['Company', 'Net Worth (£)', 'Net Profit (£)', 'Share Price (£)', 'Dividend %']}
+        rows={companies.map(c => ({
+          cells: [
+            `${c.company_name} (#${c.company_number})`,
+            gbp(c.net_worth),
+            gbp(c.net_profit),
+            c.share_price != null ? `£${Number(c.share_price).toFixed(2)}` : '—',
+            c.dividend_pct != null ? `${Number(c.dividend_pct).toFixed(1)}%` : '—',
+          ]
+        }))}
+      />
+      {Object.keys(ms).length > 0 && (
+        <>
+          <h4>Market Shares</h4>
+          {AREAS.map(area => (
+            <div key={area}>
+              <h5 style={{ marginBottom: 4 }}>{area.charAt(0).toUpperCase() + area.slice(1)}</h5>
+              <DataTable
+                headers={['Product', ...companies.map(c => c.company_name || `Co.${c.company_number}`)]}
+                rows={PRODUCTS.map((prod, pi) => ({
+                  cells: [
+                    prod,
+                    ...(ms[area.toLowerCase()]?.[pi + 1] || []).map(v => pct(v)),
+                  ]
+                }))}
+              />
+            </div>
+          ))}
+        </>
+      )}
     </div>
   );
 }
 
-function PerformanceReport({ pData }) {
+function PerformanceReport({ pData, accounts, group }) {
   const perf = pData.performance || {};
+  const companies = group?.companies || [];
+  const myNetWorth = accounts.netWorth ?? perf.netWorth;
+  const mySharePrice = accounts.sharePrice ?? perf.sharePrice;
+
   return (
     <div>
       <h3>Company Performance</h3>
       <DataTable headers={['KPI', 'Value']} rows={[
-        { cells: ['Market Share — South', perf.marketShareSouth ? `${perf.marketShareSouth}%` : '—'] },
-        { cells: ['Market Share — West', perf.marketShareWest ? `${perf.marketShareWest}%` : '—'] },
-        { cells: ['Market Share — North', perf.marketShareNorth ? `${perf.marketShareNorth}%` : '—'] },
-        { cells: ['Market Share — Export', perf.marketShareExport ? `${perf.marketShareExport}%` : '—'] },
-        { cells: ['Share Price', perf.sharePrice ? gbp(perf.sharePrice) : '—'] },
-        { cells: ['Dividends Paid This Year', perf.dividendsPaid ? gbp(perf.dividendsPaid) : '—'] },
-        { cells: ['Cumulative Profit', perf.cumulativeProfit ? gbp(perf.cumulativeProfit) : '—'] },
-        { cells: ['Net Worth', perf.netWorth ? gbp(perf.netWorth) : '—'] },
+        { cells: ['Net Worth', myNetWorth ? gbp(myNetWorth) : '—'] },
+        { cells: ['Net Profit (after tax)', accounts.netProfit ? gbp(accounts.netProfit) : '—'] },
+        { cells: ['Dividends Paid', accounts.dividendsPaid ? gbp(accounts.dividendsPaid) : '—'] },
+        { cells: ['Share Price', mySharePrice ? `£${Number(mySharePrice).toFixed(2)}` : (perf.sharePrice ? gbp(perf.sharePrice) : '—')] },
       ]} />
+      {companies.length > 0 && (
+        <>
+          <h4>Ranking</h4>
+          <DataTable
+            headers={['Rank', 'Company', 'Net Worth (£)', 'Net Profit (£)']}
+            rows={[...companies]
+              .sort((a, b) => (b.net_worth || 0) - (a.net_worth || 0))
+              .map((c, i) => ({
+                cells: [i + 1, c.company_name || `Co.${c.company_number}`, gbp(c.net_worth), gbp(c.net_profit)]
+              }))}
+          />
+        </>
+      )}
     </div>
   );
 }

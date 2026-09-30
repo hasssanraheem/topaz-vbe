@@ -11,9 +11,13 @@ require('./src/models/Team');
 require('./src/models/User');
 require('./src/models/Session');
 require('./src/models/Report');
+require('./src/models/Quarter');
+require('./src/models/Decision');
 
-const authRoutes = require('./src/routes/auth');
-const adminRoutes = require('./src/routes/admin');
+const authRoutes      = require('./src/routes/auth');
+const adminRoutes     = require('./src/routes/admin');
+const decisionsRoutes = require('./src/routes/decisions');
+const quartersRoutes  = require('./src/routes/quarters');
 
 const app = express();
 
@@ -43,6 +47,8 @@ app.get('/api/health', (req, res) => {
 
 app.use('/api', authRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/decisions', decisionsRoutes);
+app.use('/api/admin/quarters', quartersRoutes);
 
 // 404 catch-all
 app.use((req, res) => {

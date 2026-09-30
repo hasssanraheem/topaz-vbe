@@ -798,6 +798,7 @@ export const DEFAULT_DECISIONS = {
   promotion: {
     tradePres:     [0, 0, 0],
     adSupport:     [2000, 2500, 3000],
+    support:       [0, 0, 0],
     merchandising: [0, 0, 0],
   },
   // Research / product-development expenditure per product (£ full value; displayed as £'000)
