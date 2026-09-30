@@ -18,4 +18,12 @@ function requireOwnTeam(req, res, next) {
   return res.status(403).json({ error: 'You can only access your own team data' });
 }
 
-module.exports = { requireAdmin, requireOwnTeam };
+// Allows team users (not admin)
+function requireTeam(req, res, next) {
+  if (req.user.role !== 'team') {
+    return res.status(403).json({ error: 'Team access required' });
+  }
+  next();
+}
+
+module.exports = { requireAdmin, requireOwnTeam, requireTeam };

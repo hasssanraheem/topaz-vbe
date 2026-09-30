@@ -4,7 +4,7 @@
 const express  = require('express');
 const router   = express.Router();
 const verifyToken  = require('../middleware/verifyToken');
-const requireRole  = require('../middleware/requireRole');
+const { requireTeam } = require('../middleware/requireRole');
 const Decision = require('../models/Decision');
 const Quarter  = require('../models/Quarter');
 const Team     = require('../models/Team');
@@ -25,7 +25,7 @@ async function _getTeamDoc(teamNumber) {
 
 // ── GET /api/decisions — fetch current draft ───────────────────────────────────
 
-router.get('/', verifyToken, requireRole('team'), async (req, res) => {
+router.get('/', verifyToken, requireTeam, async (req, res) => {
   try {
     const team = await _getTeamDoc(req.user.teamNumber);
     if (!team) return res.status(404).json({ error: 'Team not found.' });
@@ -51,7 +51,7 @@ router.get('/', verifyToken, requireRole('team'), async (req, res) => {
 
 // ── PUT /api/decisions — save draft ───────────────────────────────────────────
 
-router.put('/', verifyToken, requireRole('team'), async (req, res) => {
+router.put('/', verifyToken, requireTeam, async (req, res) => {
   try {
     const team = await _getTeamDoc(req.user.teamNumber);
     if (!team) return res.status(404).json({ error: 'Team not found.' });
@@ -80,7 +80,7 @@ router.put('/', verifyToken, requireRole('team'), async (req, res) => {
 
 // ── POST /api/decisions/submit — lock in submission ───────────────────────────
 
-router.post('/submit', verifyToken, requireRole('team'), async (req, res) => {
+router.post('/submit', verifyToken, requireTeam, async (req, res) => {
   try {
     const team = await _getTeamDoc(req.user.teamNumber);
     if (!team) return res.status(404).json({ error: 'Team not found.' });
@@ -108,7 +108,7 @@ router.post('/submit', verifyToken, requireRole('team'), async (req, res) => {
 
 // ── GET /api/decisions/report — team fetches their own published report ────────
 
-router.get('/report', verifyToken, requireRole('team'), async (req, res) => {
+router.get('/report', verifyToken, requireTeam, async (req, res) => {
   try {
     const Report = require('../models/Report');
     const team = await _getTeamDoc(req.user.teamNumber);

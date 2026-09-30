@@ -3,7 +3,7 @@
 const express  = require('express');
 const router   = express.Router();
 const verifyToken  = require('../middleware/verifyToken');
-const requireRole  = require('../middleware/requireRole');
+const { requireAdmin } = require('../middleware/requireRole');
 const Quarter  = require('../models/Quarter');
 const Decision = require('../models/Decision');
 const Session  = require('../models/Session');
@@ -15,7 +15,7 @@ const { DEFAULT_DECISIONS } = require('../engine/tables');
 const { frontendToEngine } = require('../engine/adapter');
 
 // All routes require admin
-router.use(verifyToken, requireRole('admin'));
+router.use(verifyToken, requireAdmin);
 
 // ── GET /api/admin/quarters — list quarters for active session ─────────────────
 
