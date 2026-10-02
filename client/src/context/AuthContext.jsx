@@ -38,8 +38,13 @@ export function AuthProvider({ children }) {
     setAppUser(null);
   }
 
+  // loading is true until Firebase has settled AND, if a Firebase user exists,
+  // until /api/me has also returned. This prevents the brief redirect to /login
+  // that happens when firebaseUser arrives but appUser is still null mid-fetch.
+  const loading = firebaseUser === undefined || (firebaseUser !== null && appUser === null);
+
   return (
-    <AuthContext.Provider value={{ firebaseUser, appUser, logout, loading: firebaseUser === undefined }}>
+    <AuthContext.Provider value={{ firebaseUser, appUser, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );

@@ -531,6 +531,7 @@ function AdvanceTab({ onAdvanced }) {
         body:   JSON.stringify(shocks),
       });
       setShocksSaved('saved');
+      apiFetch('/api/advance-admin/audit-log').then(setAuditLog).catch(() => {});
     } catch (err) {
       setShocksSaved('error:' + err.message);
     }
