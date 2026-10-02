@@ -451,7 +451,6 @@ input[type="checkbox"].field-check {
   font-size: 0.85em;
   padding: 8px 14px;
   margin: 0 14px 10px;
-  border-radius: 3px;
 }
 
 .login-wrap {
@@ -681,7 +680,6 @@ input[type="checkbox"].field-check {
   color: #036;
   cursor: pointer;
   font-family: Arial, sans-serif;
-  border-radius: 3px 3px 0 0;
 }
 
 .sub-tab:hover { background: #bfe2f9; }
@@ -693,23 +691,21 @@ input[type="checkbox"].field-check {
 .review-status {
   padding: 8px 14px;
   margin-bottom: 12px;
-  border-radius: 3px;
   font-size: 0.9em;
   font-weight: bold;
 }
 
-.review-ok { background: #e6ffe6; border: 1px solid #4caf50; color: #1a5c1a; }
-.review-errors { background: #fff0f0; border: 1px solid #e53935; color: #8b0000; }
+.review-ok { background: #f7ffff; border: 1px solid #336; color: #015764; }
+.review-errors { background: #fff0f0; border: 1px solid #c00; color: #800; }
 
 .review-error-list, .review-warning-list {
   font-size: 0.87em;
   margin-bottom: 10px;
   padding: 8px 14px;
-  border-radius: 3px;
 }
 
-.review-error-list { background: #fff5f5; border-left: 4px solid #e53935; }
-.review-warning-list { background: #fffde7; border-left: 4px solid #ffd600; }
+.review-error-list { background: #fff5f5; border: 1px solid #c00; }
+.review-warning-list { background: #f7ffff; border: 1px solid #fdd035; }
 
 /* ── Info / help page sections ───────────────────────────────────────── */
 .info-section {

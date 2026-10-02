@@ -19,9 +19,9 @@ export function validatePrices(prices) {
   return errors;
 }
 
-// Promotion: { tradePres, adSupport, merchandising } each [P1,P2,P3] stored in full £
+// Promotion: { tradePres, adSupport, support, merchandising } each [P1,P2,P3] stored in full £
 export function validatePromotion(promotion) {
-  const types = ['tradePres', 'adSupport', 'merchandising'];
+  const types = ['tradePres', 'adSupport', 'support', 'merchandising'];
   const errors = {};
   for (const t of types) {
     errors[t] = (promotion[t] || [0, 0, 0]).map(v =>

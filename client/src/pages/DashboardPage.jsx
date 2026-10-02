@@ -400,9 +400,9 @@ function AdvanceTab({ onAdvanced }) {
 
   function statusBadge(status) {
     const styles = {
-      submitted:  { background: '#4a7a3e', color: '#fff', padding: '1px 8px', borderRadius: 3, fontSize: '0.82em' },
-      saved:      { background: '#e8a000', color: '#fff', padding: '1px 8px', borderRadius: 3, fontSize: '0.82em' },
-      not_saved:  { background: '#c0392b', color: '#fff', padding: '1px 8px', borderRadius: 3, fontSize: '0.82em' },
+      submitted:  { background: '#4a7a3e', color: '#fff', padding: '1px 8px', fontSize: '0.82em' },
+      saved:      { background: '#e8a000', color: '#fff', padding: '1px 8px', fontSize: '0.82em' },
+      not_saved:  { background: '#c0392b', color: '#fff', padding: '1px 8px', fontSize: '0.82em' },
     };
     const labels = { submitted: 'Submitted', saved: 'Saved', not_saved: 'Not Saved' };
     return <span style={styles[status] || {}}>{labels[status] || status}</span>;

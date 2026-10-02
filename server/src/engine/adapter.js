@@ -106,7 +106,7 @@ function frontendToEngine(f) {
     assembly_changes:    asmChanges,
     raw_material: {
       units_to_order: parseInt(f.materialsQty)       || 0,
-      supplier_no:    parseInt(f.materialsSupplier)   || 1,
+      supplier_no:    f.materialsSupplier != null ? parseInt(f.materialsSupplier) : 1,
       num_deliveries: parseInt(f.materialsDeliveries) || 1,
     },
   };
