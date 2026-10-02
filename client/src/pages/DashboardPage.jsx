@@ -5,8 +5,8 @@ import DecisionFormPage from './DecisionFormPage.jsx';
 import { DEFAULT_DECISIONS, PERIODS } from '../data/mockData.js';
 import { apiFetch } from '../lib/api.js';
 
-const NUM_COMPANIES = 8;
-const COMPANY_TABS  = Array.from({ length: NUM_COMPANIES }, (_, i) => i + 1);
+const NUM_COMPANIES  = 8;
+const COMPANY_TABS   = Array.from({ length: NUM_COMPANIES }, (_, i) => i + 1);
 const DEFAULT_PERIOD = 1;
 function getPeriodData(p) { return PERIODS[p] || PERIODS[1]; }
 function getQuarter(p)    { return ((p - 1) % 4) + 1; }
@@ -16,167 +16,142 @@ function gbp(v) {
   return `£${Number(v).toLocaleString('en-GB', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
 }
 
-// ── Management Report: shows all companies' latest published reports ──────────
+// ── Management Reports — all companies ───────────────────────────────────────
 function ManagementReports({ reports }) {
   if (!reports || reports.length === 0) {
     return (
-      <div style={{ marginTop: 24, padding: '12px 16px', background: '#f8f8f8', border: '1px solid #ddd' }}>
-        <strong>Management Reports</strong>
-        <p style={{ color: '#888', margin: '8px 0 0', fontSize: '0.88em' }}>
-          No published reports yet. Use the Advance tab to run the simulation.
-        </p>
+      <div style={{ marginTop: 20 }}>
+        <h3>Management Reports — All Companies</h3>
+        <div className="msg-box msg-info">
+          No published reports yet. Use the <strong>Advance</strong> tab to run the simulation.
+        </div>
       </div>
     );
   }
 
   return (
-    <div style={{ marginTop: 24 }}>
-      <h3 style={{ fontSize: '1em', borderBottom: '2px solid #1a3a6b', paddingBottom: 4, marginBottom: 12 }}>
-        Management Reports — All Companies
-      </h3>
-      <div style={{ display: 'grid', gap: 12 }}>
-        {reports.map(r => (
-          <CompanyReport key={r.companyNumber} report={r} />
-        ))}
-      </div>
+    <div style={{ marginTop: 20 }}>
+      <h3>Management Reports — All Companies</h3>
+      {reports.map(r => (
+        <CompanyReport key={r.companyNumber} report={r} />
+      ))}
     </div>
   );
 }
 
 function CompanyReport({ report }) {
   const [open, setOpen] = useState(false);
-  const d = report.data || {};
-  const pnl = d.pnl || {};
-  const bs  = d.balance_sheet || {};
-  const meta = d.meta || {};
+  const d    = report.data || {};
+  const pnl  = d.pnl           || {};
+  const bs   = d.balance_sheet  || {};
+  const meta = d.meta           || {};
 
   return (
-    <div style={{ border: '1px solid #ccc', borderRadius: 3 }}>
-      <button
+    <div className="decision-panel" style={{ marginBottom: 10 }}>
+      <div
+        className="decision-panel-heading"
+        style={{ cursor: 'pointer', userSelect: 'none' }}
         onClick={() => setOpen(o => !o)}
-        style={{
-          width: '100%', textAlign: 'left', padding: '8px 12px',
-          background: '#1a3a6b', color: '#fff', border: 'none', cursor: 'pointer',
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          fontSize: '0.9em',
-        }}
       >
-        <span>
-          Company {report.companyNumber}
-          {meta.year ? ` — ${meta.year} Q${meta.quarter}` : ''}
+        Company {report.companyNumber}
+        {meta.year ? ` — Year ${meta.year} Q${meta.quarter}` : ''}
+        &nbsp;&nbsp;
+        <span style={{ fontWeight: 400, fontSize: '0.9em' }}>
+          Net Worth: {gbp(bs.net_worth)} &nbsp;|&nbsp; Net Profit: {gbp(pnl.net_profit)}
         </span>
-        <span style={{ fontSize: '0.8em' }}>
-          Net Worth: {gbp(bs.net_worth)} &nbsp;|&nbsp; Net Profit: {gbp(pnl.net_profit)} &nbsp; {open ? '▲' : '▼'}
-        </span>
-      </button>
+        <span style={{ float: 'right' }}>{open ? '▲' : '▼'}</span>
+      </div>
+
       {open && (
-        <div style={{ padding: '10px 14px', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px 20px', fontSize: '0.85em' }}>
-          <ReportBlock title="Profit & Loss">
-            <Row label="Sales Revenue"     val={gbp(pnl.sales_revenue)} />
-            <Row label="Cost of Sales"     val={gbp(pnl.cost_of_sales)} />
-            <Row label="Gross Profit"      val={gbp(pnl.gross_profit)} bold />
-            <Row label="Total Overheads"   val={gbp(pnl.total_overheads)} />
-            <Row label="Profit Before Tax" val={gbp(pnl.profit_before_tax)} bold />
-            <Row label="Tax"               val={gbp(pnl.tax_assessed)} />
-            <Row label="Net Profit"        val={gbp(pnl.net_profit)} bold />
-            <Row label="Dividends Paid"    val={gbp(pnl.dividend_paid)} />
-            <Row label="Retained Profit"   val={gbp(pnl.retained_profit)} bold />
-          </ReportBlock>
-          <ReportBlock title="Balance Sheet">
-            <Row label="Fixed Assets"       val={gbp(bs.fixed_assets)} />
-            <Row label="Product Stocks"     val={gbp(bs.product_stocks)} />
-            <Row label="Material Stocks"    val={gbp(bs.material_stocks)} />
-            <Row label="Debtors"            val={gbp(bs.debtors)} />
-            <Row label="Cash Invested"      val={gbp(bs.cash_invested)} />
-            <Row label="Total Assets"       val={gbp(bs.total_assets)} bold />
-            <Row label="Current Liabilities"val={gbp(bs.current_liabilities)} />
-            <Row label="Net Assets"         val={gbp(bs.net_assets)} bold />
-            <Row label="Net Worth"          val={gbp(bs.net_worth)} bold />
-          </ReportBlock>
-          <ReportBlock title="Key Metrics">
-            <Row label="Share Price"     val={bs.net_worth ? `£${(bs.net_worth / 1_000_000).toFixed(2)}` : '—'} />
-            <Row label="Overdraft Limit" val={gbp(bs.overdraft_limit)} />
-            <Row label="Bank Overdraft"  val={gbp(bs.bank_overdraft)} />
-            <Row label="Tax Due"         val={gbp(bs.tax_due)} />
-            <Row label="Creditors"       val={gbp(bs.creditors)} />
-            <Row label="Share Capital"   val={gbp(bs.share_capital)} />
-            <Row label="Reserves"        val={gbp(bs.reserves)} />
-          </ReportBlock>
+        <div className="decision-panel-body">
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85em' }}>
+            <thead>
+              <tr>
+                <th className="data-table-col" style={{ background: '#bfe2f9', color: '#036', padding: '4px 8px', border: '1px solid #7C9BCF', textAlign: 'left' }}>Profit &amp; Loss</th>
+                <th style={{ background: '#bfe2f9', color: '#036', padding: '4px 8px', border: '1px solid #7C9BCF', textAlign: 'right' }}>£</th>
+                <th style={{ background: '#bfe2f9', color: '#036', padding: '4px 8px', border: '1px solid #7C9BCF', textAlign: 'left' }}>Balance Sheet</th>
+                <th style={{ background: '#bfe2f9', color: '#036', padding: '4px 8px', border: '1px solid #7C9BCF', textAlign: 'right' }}>£</th>
+              </tr>
+            </thead>
+            <tbody>
+              <ReportRow a="Sales Revenue"     av={gbp(pnl.sales_revenue)}     b="Fixed Assets"        bv={gbp(bs.fixed_assets)} />
+              <ReportRow a="Cost of Sales"     av={gbp(pnl.cost_of_sales)}     b="Product Stocks"      bv={gbp(bs.product_stocks)} />
+              <ReportRow a="Gross Profit"      av={gbp(pnl.gross_profit)}      b="Material Stocks"     bv={gbp(bs.material_stocks)} bold />
+              <ReportRow a="Total Overheads"   av={gbp(pnl.total_overheads)}   b="Debtors"             bv={gbp(bs.debtors)} />
+              <ReportRow a="Profit Before Tax" av={gbp(pnl.profit_before_tax)} b="Cash Invested"       bv={gbp(bs.cash_invested)} bold />
+              <ReportRow a="Tax"               av={gbp(pnl.tax_assessed)}      b="Total Assets"        bv={gbp(bs.total_assets)} />
+              <ReportRow a="Net Profit"        av={gbp(pnl.net_profit)}        b="Current Liabilities" bv={gbp(bs.current_liabilities)} bold />
+              <ReportRow a="Dividends Paid"    av={gbp(pnl.dividend_paid)}     b="Net Assets"          bv={gbp(bs.net_assets)} />
+              <ReportRow a="Retained Profit"   av={gbp(pnl.retained_profit)}   b="Net Worth"           bv={gbp(bs.net_worth)} bold />
+            </tbody>
+          </table>
         </div>
       )}
     </div>
   );
 }
 
-function ReportBlock({ title, children }) {
+function ReportRow({ a, av, b, bv, bold }) {
+  const s = bold ? { fontWeight: 'bold', background: '#c0e0f8' } : {};
   return (
-    <div>
-      <div style={{ fontWeight: 700, fontSize: '0.82em', textTransform: 'uppercase', letterSpacing: '0.04em', color: '#555', marginBottom: 6 }}>{title}</div>
-      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-        <tbody>{children}</tbody>
-      </table>
-    </div>
-  );
-}
-
-function Row({ label, val, bold }) {
-  return (
-    <tr style={{ borderBottom: '1px solid #f0f0f0' }}>
-      <td style={{ padding: '2px 0', color: '#444' }}>{label}</td>
-      <td style={{ padding: '2px 0', textAlign: 'right', fontWeight: bold ? 700 : 400 }}>{val}</td>
+    <tr style={s}>
+      <td style={{ padding: '3px 8px', border: '1px solid #7C9BCF', background: bold ? '#c0e0f8' : '#e0efff', color: '#036' }}>{a}</td>
+      <td style={{ padding: '3px 8px', border: '1px solid #7C9BCF', textAlign: 'right', background: bold ? '#c0e0f8' : '#f0f8ff', fontVariantNumeric: 'tabular-nums' }}>{av}</td>
+      <td style={{ padding: '3px 8px', border: '1px solid #7C9BCF', background: bold ? '#c0e0f8' : '#e0efff', color: '#036' }}>{b}</td>
+      <td style={{ padding: '3px 8px', border: '1px solid #7C9BCF', textAlign: 'right', background: bold ? '#c0e0f8' : '#f0f8ff', fontVariantNumeric: 'tabular-nums' }}>{bv}</td>
     </tr>
   );
 }
 
 // ── Advance Tab ───────────────────────────────────────────────────────────────
 function AdvanceTab({ onAdvanced }) {
-  const [status, setStatus]   = useState('idle'); // idle | running | done | error
-  const [message, setMessage] = useState('');
+  const [busy, setBusy]       = useState(false);
+  const [msg, setMsg]         = useState('');
+  const [isError, setIsError] = useState(false);
 
   async function handleAdvance() {
-    if (!window.confirm('Advance to the next quarter? This will lock all decisions and run the simulation.')) return;
-    setStatus('running');
-    setMessage('');
+    if (!window.confirm('Advance to the next quarter?\n\nThis will lock all current decisions and run the simulation for all companies.')) return;
+    setBusy(true);
+    setMsg('');
+    setIsError(false);
     try {
       const result = await apiFetch('/api/advance', { method: 'POST', body: JSON.stringify({}) });
-      setStatus('done');
-      setMessage(result.message || 'Quarter advanced successfully.');
+      setMsg(result.message || 'Quarter advanced successfully.');
       onAdvanced();
     } catch (err) {
-      setStatus('error');
-      setMessage(err.message || 'Advance failed.');
+      setIsError(true);
+      setMsg(err.message || 'Advance failed.');
+    } finally {
+      setBusy(false);
     }
   }
 
   return (
-    <div style={{ padding: '2em 1em', maxWidth: 480 }}>
-      <h3 style={{ marginTop: 0 }}>Advance Simulation</h3>
-      <p style={{ color: '#555', fontSize: '0.9em', marginBottom: 20 }}>
-        Click <strong>Advance Quarter</strong> to lock all company decisions and run the simulation engine.
-        Results will appear immediately in each company's Management Report section.
-      </p>
-      <button
-        onClick={handleAdvance}
-        disabled={status === 'running'}
-        style={{
-          padding: '10px 28px', background: status === 'running' ? '#888' : '#1a3a6b',
-          color: '#fff', border: 'none', cursor: status === 'running' ? 'not-allowed' : 'pointer',
-          fontSize: '1em', borderRadius: 3,
-        }}
-      >
-        {status === 'running' ? 'Running…' : 'Advance Quarter'}
-      </button>
+    <div>
+      <h2>Advance Simulation</h2>
+      <div className="decision-panel" style={{ maxWidth: 520 }}>
+        <div className="decision-panel-heading">Run Next Quarter</div>
+        <div className="decision-panel-body">
+          <p>
+            Click <strong>Advance Quarter</strong> to lock all company decisions and run the
+            simulation engine. Results will appear in each company's Management Report section.
+          </p>
+          <button
+            className="btn btn-submit"
+            onClick={handleAdvance}
+            disabled={busy}
+            style={{ marginTop: 8 }}
+          >
+            {busy ? 'Running simulation…' : 'Advance Quarter'}
+          </button>
 
-      {message && (
-        <div style={{
-          marginTop: 16, padding: '10px 14px',
-          background: status === 'error' ? '#fff0f0' : '#f0fff4',
-          border: `1px solid ${status === 'error' ? '#f99' : '#8bc'}`,
-          fontSize: '0.88em',
-        }}>
-          {message}
+          {msg && (
+            <div className={`msg-box ${isError ? 'msg-error' : 'msg-success'}`} style={{ marginTop: 12 }}>
+              {msg}
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }
@@ -186,17 +161,17 @@ export default function DashboardPage() {
   const { appUser, logout } = useAuth();
   const navigate = useNavigate();
 
-  const [activeTab, setActiveTab]       = useState(1); // 1-8 = company, 0 = advance
-  const [decisions, setDecisions]       = useState({}); // { [companyNumber]: dec }
-  const [saveStatus, setSaveStatus]     = useState({}); // { [companyNumber]: 'saved'|'error'|'' }
-  const [reports, setReports]           = useState([]);  // all companies' reports
-  const [reportsLoading, setRepsLoading]= useState(true);
+  const [activeTab, setActiveTab]         = useState(1);
+  const [decisions, setDecisions]         = useState({});
+  const [saveStatus, setSaveStatus]       = useState({});
+  const [reports, setReports]             = useState([]);
+  const [reportsLoading, setRepsLoading]  = useState(true);
 
   const periodData = getPeriodData(DEFAULT_PERIOD);
   const quarter    = getQuarter(DEFAULT_PERIOD);
   const session    = { simulationCode: '—', groupNumber: '—', startYear: 2024, startQuarter: 1 };
 
-  // Load all decisions on mount
+  // Load all 8 companies' decisions on mount
   useEffect(() => {
     apiFetch('/api/decisions/all')
       .then(data => {
@@ -209,7 +184,7 @@ export default function DashboardPage() {
       .catch(() => {});
   }, []);
 
-  // Load all reports
+  // Load all published reports
   const loadReports = useCallback(() => {
     setRepsLoading(true);
     apiFetch('/api/reports/all')
@@ -236,7 +211,7 @@ export default function DashboardPage() {
         body: JSON.stringify({ companyNumber, data: dec }),
       });
       setSaveStatus(prev => ({ ...prev, [companyNumber]: 'saved' }));
-    } catch (err) {
+    } catch {
       setSaveStatus(prev => ({ ...prev, [companyNumber]: 'error' }));
     }
     setTimeout(() => setSaveStatus(prev => ({ ...prev, [companyNumber]: '' })), 3000);
@@ -248,62 +223,51 @@ export default function DashboardPage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f4f4f4' }}>
-      {/* Header */}
-      <div style={{
-        background: '#1a3a6b', color: '#fff', padding: '10px 20px',
-        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-      }}>
-        <div>
-          <span style={{ fontWeight: 700, fontSize: '1.05em' }}>Topaz-VBE Business Simulation</span>
-          {appUser?.email && (
-            <span style={{ marginLeft: 16, fontSize: '0.82em', opacity: 0.8 }}>{appUser.email}</span>
-          )}
+    <div style={{ minHeight: '100vh' }}>
+      {/* Header — original style */}
+      <div id="page-header">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <h1 style={{ margin: 0 }}>Topaz-VBE Business Simulation</h1>
+          <button className="btn btn-danger" onClick={handleLogout}>
+            Sign Out
+          </button>
         </div>
-        <button
-          onClick={handleLogout}
-          style={{ background: '#c00', color: '#fff', border: 'none', padding: '5px 16px', cursor: 'pointer', borderRadius: 2, fontSize: '0.88em' }}
-        >
-          Sign Out
-        </button>
+        {appUser?.email && (
+          <div className="header-meta">
+            Signed in as: <strong>{appUser.email}</strong>
+          </div>
+        )}
       </div>
 
-      {/* Tab bar */}
-      <div style={{ background: '#fff', borderBottom: '2px solid #1a3a6b', display: 'flex', overflowX: 'auto' }}>
-        {COMPANY_TABS.map(n => (
+      {/* Company tab bar — uses existing sub-nav-tabs / sub-tab classes */}
+      <div style={{ padding: '8px 20px 0', background: '#eee7c7', borderBottom: '2px solid #c9b87a' }}>
+        <div className="sub-nav-tabs" style={{ borderBottom: 'none', paddingBottom: 0, marginBottom: 0 }}>
+          {COMPANY_TABS.map(n => (
+            <button
+              key={n}
+              className={`sub-tab${activeTab === n ? ' active' : ''}`}
+              onClick={() => setActiveTab(n)}
+            >
+              Company {n}
+            </button>
+          ))}
           <button
-            key={n}
-            onClick={() => setActiveTab(n)}
+            className={`sub-tab${activeTab === 0 ? ' active' : ''}`}
+            onClick={() => setActiveTab(0)}
             style={{
-              padding: '10px 18px', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
-              background: activeTab === n ? '#1a3a6b' : 'transparent',
-              color: activeTab === n ? '#fff' : '#333',
-              fontWeight: activeTab === n ? 700 : 400,
-              fontSize: '0.88em',
-              borderBottom: activeTab === n ? '3px solid #1a3a6b' : '3px solid transparent',
+              marginLeft: 'auto',
+              background: activeTab === 0 ? '#c0e0c0' : '#dde8dd',
+              borderColor: activeTab === 0 ? '#4a8' : '#aaa',
+              color: '#264',
             }}
           >
-            Company {n}
+            &#9654; Advance
           </button>
-        ))}
-        <button
-          onClick={() => setActiveTab(0)}
-          style={{
-            padding: '10px 18px', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
-            background: activeTab === 0 ? '#8B0000' : 'transparent',
-            color: activeTab === 0 ? '#fff' : '#8B0000',
-            fontWeight: 700,
-            fontSize: '0.88em',
-            borderBottom: activeTab === 0 ? '3px solid #8B0000' : '3px solid transparent',
-            marginLeft: 'auto',
-          }}
-        >
-          ⚙ Advance
-        </button>
+        </div>
       </div>
 
       {/* Tab content */}
-      <div style={{ padding: '16px 20px' }}>
+      <div id="page-body">
         {activeTab === 0 ? (
           <AdvanceTab onAdvanced={loadReports} />
         ) : (
@@ -325,13 +289,12 @@ export default function DashboardPage() {
   );
 }
 
-// ── Company tab content ───────────────────────────────────────────────────────
+// ── Per-company tab content ───────────────────────────────────────────────────
 function CompanyTabContent({ companyNumber, dec, onChange, onSave, saveStatus, reports, reportsLoading, periodData, quarter, session }) {
   return (
     <div>
-      <h2 style={{ marginTop: 0, fontSize: '1.1em', color: '#1a3a6b' }}>Company {companyNumber} — Decisions</h2>
+      <h2>Company {companyNumber} — Decision Form</h2>
 
-      {/* Decision form */}
       <DecisionFormPage
         dec={dec}
         onChange={onChange}
@@ -344,24 +307,28 @@ function CompanyTabContent({ companyNumber, dec, onChange, onSave, saveStatus, r
         onNavigate={() => {}}
       />
 
-      {/* Save button */}
-      <div style={{ margin: '14px 0 24px', display: 'flex', alignItems: 'center', gap: 12 }}>
-        <button
-          onClick={onSave}
-          style={{
-            padding: '8px 28px', background: '#1a3a6b', color: '#fff',
-            border: 'none', cursor: 'pointer', fontSize: '0.95em', borderRadius: 3,
-          }}
-        >
+      {/* Save button row */}
+      <div style={{ margin: '10px 0 18px', display: 'flex', alignItems: 'center', gap: 10 }}>
+        <button className="btn btn-submit" onClick={onSave}>
           Save Decisions
         </button>
-        {saveStatus === 'saved' && <span style={{ color: '#1a7a3a', fontSize: '0.88em' }}>✓ Saved</span>}
-        {saveStatus === 'error' && <span style={{ color: '#c00', fontSize: '0.88em' }}>✗ Save failed</span>}
+        {saveStatus === 'saved' && (
+          <span className="msg-box msg-success" style={{ display: 'inline', padding: '2px 10px' }}>
+            &#10003; Saved
+          </span>
+        )}
+        {saveStatus === 'error' && (
+          <span className="msg-box msg-error" style={{ display: 'inline', padding: '2px 10px' }}>
+            &#10007; Save failed
+          </span>
+        )}
       </div>
+
+      <hr />
 
       {/* Management reports */}
       {reportsLoading ? (
-        <div style={{ color: '#888', fontSize: '0.88em' }}>Loading reports…</div>
+        <p style={{ color: '#555', fontSize: '0.88em' }}>Loading reports…</p>
       ) : (
         <ManagementReports reports={reports} />
       )}
