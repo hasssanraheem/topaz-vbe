@@ -14,11 +14,16 @@ export function AuthProvider({ children }) {
       setFirebaseUser(fbUser);
       if (fbUser) {
         try {
+          await fbUser.getIdToken(true); // force-refresh to get latest claims before /api/me
           const data = await apiFetch('/api/me');
           setAppUser(data);
-        } catch {
-          // Token rejected by backend — sign out
-          await signOut(auth);
+        } catch (err) {
+          console.warn('[Auth] /api/me failed after sign-in:', err.message);
+          // Only sign out if the backend explicitly rejected the token (401/403).
+          // Don't sign out for network errors so a fresh login attempt still works.
+          if (err.message?.includes('not registered') || err.message?.includes('Invalid or expired')) {
+            await signOut(auth);
+          }
           setAppUser(null);
         }
       } else {

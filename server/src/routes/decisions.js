@@ -9,6 +9,7 @@ const Quarter      = require('../models/Quarter');
 const Team         = require('../models/Team');
 const Report       = require('../models/Report');
 const Session      = require('../models/Session');
+const AuditLog     = require('../models/AuditLog');
 const { validateDecisions } = require('../engine/validation');
 const { computeQuarter }    = require('../engine/simulation');
 const { frontendToEngine }  = require('../engine/adapter');
@@ -143,6 +144,39 @@ router.put('/', verifyToken, async (req, res) => {
   }
 });
 
+// ── POST /api/decisions/submit — lock a company's decisions for the quarter ────
+// Body: { companyNumber: N }  (or omit to use the logged-in user's team)
+
+router.post('/submit', verifyToken, async (req, res) => {
+  try {
+    const companyNumber = req.body.companyNumber || req.user.teamNumber;
+    const team = await _getTeamByNumber(companyNumber);
+    if (!team) return res.status(404).json({ error: 'Team not found.' });
+
+    const session = await _getSession();
+    if (!session) return res.status(404).json({ error: 'No active session.' });
+
+    const quarter = await _getActiveQuarter(session._id);
+    if (!quarter) return res.status(404).json({ error: 'No open quarter.' });
+    if (quarter.status === 'locked') {
+      return res.status(409).json({ error: 'Quarter is locked — submissions are closed.' });
+    }
+
+    const dec = await Decision.findOne({ team: team._id, quarter: quarter._id });
+    if (!dec || !dec.data) {
+      return res.status(400).json({ error: 'No saved decisions found. Please save first.' });
+    }
+
+    dec.submitted = true;
+    await dec.save();
+
+    res.json({ submitted: true, companyNumber });
+  } catch (err) {
+    console.error('POST /decisions/submit error:', err);
+    res.status(500).json({ error: 'Server error.' });
+  }
+});
+
 // ── GET /api/decisions/report — one company's latest published report ──────────
 
 router.get('/report', verifyToken, async (req, res) => {
@@ -166,26 +200,36 @@ router.get('/report', verifyToken, async (req, res) => {
   }
 });
 
-// ── GET /api/reports/all — all companies' latest published reports ─────────────
-// Returns array: [{ companyNumber, round, data }]
+// ── GET /api/reports/all — all companies' published reports ───────────────────
+// Returns array: [{ companyNumber, round, data }], all quarters, newest first.
+// Optional query params: ?year=2024&quarter=1 to filter server-side.
 
 router.get('/reports/all', verifyToken, async (req, res) => {
   try {
     const sessionId = await _getSessionId();
     if (!sessionId) return res.json([]);
 
-    const teams   = await _getAllTeams();
-    const result  = await Promise.all(teams.map(async t => {
-      const report = await Report.findOne({ session: sessionId, team: t._id })
-        .sort({ generatedAt: -1 });
-      return {
-        companyNumber: t.teamNumber,
-        round:         report?.round || null,
-        data:          report?.data  || null,
-      };
-    }));
+    const teams  = await _getAllTeams();
+    const teamMap = {};
+    for (const t of teams) teamMap[t._id.toString()] = t.teamNumber;
 
-    res.json(result.filter(r => r.data !== null));
+    const filter = { session: sessionId };
+    if (req.query.year && req.query.quarter) {
+      filter.round = `${req.query.year}-Q${req.query.quarter}`;
+    }
+
+    const reports = await Report.find(filter).sort({ generatedAt: -1 });
+
+    const result = reports
+      .filter(r => r.data)
+      .map(r => ({
+        companyNumber: teamMap[r.team?.toString()] || null,
+        round:         r.round || null,
+        data:          r.data,
+      }))
+      .filter(r => r.companyNumber !== null);
+
+    res.json(result);
   } catch (err) {
     console.error('GET /reports/all error:', err);
     res.status(500).json({ error: 'Server error.' });
@@ -271,6 +315,24 @@ router.post('/advance', verifyToken, async (req, res) => {
     quarter.status      = 'published';
     quarter.publishedAt = now;
     await quarter.save();
+
+    // Open the NEXT quarter automatically
+    let nextYear = quarter.year;
+    let nextQtr  = quarter.quarter + 1;
+    if (nextQtr > 4) { nextQtr = 1; nextYear++; }
+    await Quarter.findOneAndUpdate(
+      { session: session._id, year: nextYear, quarter: nextQtr },
+      { $setOnInsert: { session: session._id, year: nextYear, quarter: nextQtr, status: 'open' } },
+      { upsert: true }
+    );
+
+    const autoPassed = teamInputs.filter(t => t.auto_pass).map(t => t.team.company_number);
+    await AuditLog.create({
+      actor:   req.user?.email || 'admin',
+      action:  'roll-quarter',
+      details: `Year ${quarter.year} Quarter ${quarter.quarter} published for ${teams.length} teams` +
+               (autoPassed.length ? ` (auto-passed: companies ${autoPassed.join(', ')})` : ''),
+    });
 
     res.json({
       message: `Quarter ${quarter.year} Q${quarter.quarter} published successfully.`,

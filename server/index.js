@@ -13,11 +13,13 @@ require('./src/models/Session');
 require('./src/models/Report');
 require('./src/models/Quarter');
 require('./src/models/Decision');
+require('./src/models/AuditLog');
 
-const authRoutes      = require('./src/routes/auth');
-const adminRoutes     = require('./src/routes/admin');
-const decisionsRoutes = require('./src/routes/decisions');
-const quartersRoutes  = require('./src/routes/quarters');
+const authRoutes         = require('./src/routes/auth');
+const adminRoutes        = require('./src/routes/admin');
+const decisionsRoutes    = require('./src/routes/decisions');
+const quartersRoutes     = require('./src/routes/quarters');
+const advanceAdminRoutes = require('./src/routes/advanceAdmin');
 
 const app = express();
 
@@ -49,6 +51,7 @@ app.use('/api', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/decisions', decisionsRoutes);
 app.use('/api/admin/quarters', quartersRoutes);
+app.use('/api/advance-admin', advanceAdminRoutes);
 
 // Also expose /api/reports/all and /api/advance from decisionsRoutes
 app.use('/api', decisionsRoutes);

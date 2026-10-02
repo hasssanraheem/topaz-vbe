@@ -163,7 +163,10 @@ function _phaseA(team, d, mv, avgPrice) {
   const workers = Math.max(
     op.assembly_workers + parseInt(_num(d.assembly_changes.recruit)) - parseInt(_num(d.assembly_changes.dismiss)), 0
   );
-  const assyAvail = workers * (t16.basic_hours_per_q + t16.saturday_overtime[shift] + t16.sunday_overtime);
+  const strikeHrsLost = mv.strike_weeks * 48 * workers;
+  const assyAvail = Math.max(0,
+    workers * (t16.basic_hours_per_q + t16.saturday_overtime[shift] + t16.sunday_overtime) - strikeHrsLost
+  );
 
   const ordered   = Math.max(parseInt(_num(d.raw_material.units_to_order)), 0);
   const delivered = ordered; // full in-quarter delivery
@@ -343,11 +346,23 @@ function _phaseB(team, d, pa, mv, industry, year, quarter, nowIso) {
     + t12.external_storage_per_unit * Math.max(0, closingTotal - t12.factory_storage_units)
     + t12.market_area_storage_per_unit * closingTotal
   );
+  // T15 personnel costs — recruit/dismiss/train charges now properly applied
+  const t15 = TABLES.T15;
+  const spChanges  = d.salespeople_changes  || {};
+  const asmChanges = d.assembly_changes     || {};
+  const personnelCosts =
+    _num(spChanges.recruit)  * t15.salesperson.recruit +
+    _num(spChanges.dismiss)  * t15.salesperson.dismiss +
+    _num(spChanges.train)    * t15.salesperson.train   +
+    _num(asmChanges.recruit) * t15.assembly.recruit    +
+    _num(asmChanges.dismiss) * t15.assembly.dismiss    +
+    _num(asmChanges.train)   * t15.assembly.train;
   const fixedOverheads   = t20.fixed_overheads_per_q;
   const variableOverhead = t20.variable_overhead_rate * revenue;
   const totalOverheads   = advertising + tradePressOH + supportOH + merchandising
     + salesForce + research + management + maintenance + supervision + productionOH
-    + planning + infoCharges + creditControl + guarantee + warehousing + fixedOverheads + variableOverhead;
+    + planning + infoCharges + creditControl + guarantee + warehousing
+    + personnelCosts + fixedOverheads + variableOverhead;
 
   const operating    = gross - totalOverheads;
   const depreciation = t18.machine_depreciation_per_q * op.machines_value
@@ -420,6 +435,8 @@ function _phaseB(team, d, pa, mv, industry, year, quarter, nowIso) {
         scheduled:     parseInt(pa.sched[a][p]),
         produced:      parseInt(pa.produced[a][p]),
         rejected:      parseInt(pa.rejected[a][p]),
+        serviced:      Math.round(sales[a][p] * 0.02),
+        delivered:     parseInt(d.make_deliver[a][p - 1] || 0),
         demand:        parseInt(pa.demandUnits[a][p]),
         sales:         parseInt(sales[a][p]),
         backlog:       parseInt(backlog[a][p]),
@@ -472,7 +489,7 @@ function _phaseB(team, d, pa, mv, industry, year, quarter, nowIso) {
       support: _r(supportOH), merchandising: _r(merchandising),
       sales_force: _r(salesForce), research: _r(research), management: _r(management),
       maintenance: _r(maintenance), supervision: _r(supervision),
-      production_overheads: _r(productionOH), planning: _r(planning),
+      production_overheads: _r(productionOH), planning: _r(planning), personnel_costs: _r(personnelCosts),
       info_charges: _r(infoCharges), credit_control: _r(creditControl),
       guarantee_servicing: _r(guarantee), warehousing: _r(warehousing),
       fixed_overheads: _r(fixedOverheads), variable_overhead: _r(variableOverhead),
@@ -512,6 +529,7 @@ function _phaseB(team, d, pa, mv, industry, year, quarter, nowIso) {
       gdp_growth_pct: mv.gdp, unemployment_pct: mv.unemp,
       central_bank_rate: mv.bank, inflation_pct: mv.infl,
       recession: mv.recession, material_price_next_q: _r(pa.matPrice),
+      strike_weeks_next: mv.strike_weeks_next,
     },
   };
 
@@ -540,12 +558,14 @@ function _phaseB(team, d, pa, mv, industry, year, quarter, nowIso) {
 function computeQuarter(industry, year, quarter, teams, macro, nowIso) {
   macro = macro || {};
   const mv = {
-    gdp:        _num(macro.gdp_growth_pct, 2.5),
-    infl:       _num(macro.inflation_pct, 0.0),
-    recession:  Boolean(macro.recession),
-    bank:       _num(macro.central_bank_rate, 8.0),
-    unemp:      _num(macro.unemployment_pct, 5.0),
-    mat_change: _num(macro.material_price_change_pct, 0.0),
+    gdp:             _num(macro.gdp_growth_pct, 2.5),
+    infl:            _num(macro.inflation_pct, 0.0),
+    recession:       Boolean(macro.recession),
+    bank:            _num(macro.central_bank_rate, 8.0),
+    unemp:           _num(macro.unemployment_pct, 5.0),
+    mat_change:      _num(macro.material_price_change_pct, 0.0),
+    strike_weeks:    Math.min(3, Math.max(0, _num(macro.strike_weeks, 0))),
+    strike_weeks_next: Math.min(3, Math.max(0, _num(macro.strike_weeks_next, 0))),
   };
 
   const ordered = [...teams].sort((a, b) => a.team.company_number - b.team.company_number);

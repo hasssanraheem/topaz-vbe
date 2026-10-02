@@ -1,8 +1,5 @@
-import { useState } from 'react';
 import { PRODUCTS, AREAS, MIN_ASSEMBLY_TIME } from '../data/mockData.js';
 import { validateAll } from '../logic/validation.js';
-import { saveDecisions } from '../logic/storage.js';
-import Button from '../components/Button.jsx';
 
 // Compact input used throughout the image-matching form
 function FInput({ value, onChange, disabled, min, max, step = 1, style = {} }) {
@@ -56,9 +53,7 @@ const TD = ({ children, center }) => (
   <td style={{ padding: '2px 4px', textAlign: center ? 'center' : 'left' }}>{children}</td>
 );
 
-export default function DecisionFormPage({ dec, onChange, teamNumber, period, disabled, periodData, quarter, session, onNavigate }) {
-  const [saveMsg, setSaveMsg] = useState('');
-
+export default function DecisionFormPage({ dec, onChange, teamNumber, period, disabled, periodData, quarter, session, saveStatus, submitStatus, onNavigate }) {
   const machines       = periodData?.resources?.machinesAvailable || 6;
   const assemblyWorkers = periodData?.resources?.personnel?.assemblyWorkers?.nextQtr || 40;
   const salespeople    = periodData?.resources?.personnel?.salespeople?.nextQtr || 6;
@@ -71,13 +66,13 @@ export default function DecisionFormPage({ dec, onChange, teamNumber, period, di
 
   // ── Header display values ──────────────────────────────────────────────────
   const simCode    = session?.simulationCode || '—';
-  const groupNum   = session?.groupNumber || '—';
-  const year       = session?.startYear
-    ? session.startYear + Math.floor((period - 1) / 4)
-    : '—';
-  // TODO: confirm Identity Number field with client — showing '—' for now
-  const identityNum = '—';
-  const status = disabled ? 'Submitted' : 'Not Submitted';
+  const groupNum   = session?.groupNumber ?? 1;
+  const year       = session?.startYear || '—';
+  const identityNum = `ID-100${teamNumber}`;
+  const status = submitStatus === 'submitted' ? 'Submitted'
+    : saveStatus === 'saved' ? 'Saved'
+    : disabled ? 'Submitted'
+    : 'Not Submitted';
 
   // ── Helpers ────────────────────────────────────────────────────────────────
   function set(field, value) { onChange({ ...dec, [field]: value }); }
@@ -127,15 +122,6 @@ export default function DecisionFormPage({ dec, onChange, teamNumber, period, di
     const implementImprovement = [...dec.implementImprovement];
     implementImprovement[p] = v;
     onChange({ ...dec, implementImprovement });
-  }
-
-  function save() {
-    if (saveDecisions(teamNumber, period, dec)) {
-      setSaveMsg('Saved.');
-    } else {
-      setSaveMsg('Save failed.');
-    }
-    setTimeout(() => setSaveMsg(''), 2500);
   }
 
   // Salary and budget: stored in full £, displayed scaled
@@ -589,18 +575,9 @@ export default function DecisionFormPage({ dec, onChange, teamNumber, period, di
         </div>{/* end RIGHT COLUMN */}
       </div>{/* end grid */}
 
-      {/* ── Actions ─────────────────────────────────────────────────────── */}
-      {!disabled && (
-        <div style={{ marginTop: 10, display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-          <Button onClick={save}>Save</Button>
-          <Button onClick={() => onNavigate('review')} disabled={hasErrors} variant={hasErrors ? 'secondary' : 'primary'}>
-            Review &amp; Submit
-          </Button>
-          {saveMsg && (
-            <span style={{ color: saveMsg.includes('failed') ? 'red' : 'green', fontSize: '0.88em' }}>
-              {saveMsg}
-            </span>
-          )}
+      {/* ── Inline validation summary (errors/warnings only — buttons are in parent) ── */}
+      {!disabled && (hasErrors || warnings.length > 0) && (
+        <div style={{ marginTop: 6, display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
           {hasErrors && (
             <span style={{ color: 'red', fontSize: '0.85em' }}>
               Fix {Object.keys(errors).length} error(s) before submitting.

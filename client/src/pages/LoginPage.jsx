@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { auth } from '../config/firebase.js';
 import { apiFetch } from '../lib/api.js';
@@ -25,18 +25,23 @@ export default function LoginPage() {
     setError('');
     setBusy(true);
     try {
+      // Clear any stale cached session before attempting fresh sign-in
+      if (auth.currentUser) {
+        await signOut(auth);
+      }
       await signInWithEmailAndPassword(auth, email.trim(), password);
       await apiFetch('/api/me');
       navigate('/dashboard', { replace: true });
     } catch (err) {
+      console.error('[Login] sign-in error:', err.code, err.message);
       if (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found') {
-        setError('Incorrect email or password.');
+        setError(`Incorrect email or password. (code: ${err.code})`);
       } else if (err.code === 'auth/too-many-requests') {
         setError('Too many attempts. Please wait and try again.');
       } else if (err.message?.includes('not registered')) {
         setError('This account is not registered in the system.');
       } else {
-        setError(err.message || 'Sign-in failed. Please try again.');
+        setError(`${err.message || 'Sign-in failed.'} (code: ${err.code || 'none'})`);
       }
     } finally {
       setBusy(false);
