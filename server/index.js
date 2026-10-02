@@ -50,6 +50,9 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/decisions', decisionsRoutes);
 app.use('/api/admin/quarters', quartersRoutes);
 
+// Also expose /api/reports/all and /api/advance from decisionsRoutes
+app.use('/api', decisionsRoutes);
+
 // 404 catch-all
 app.use((req, res) => {
   res.status(404).json({ error: `Route ${req.method} ${req.path} not found` });
