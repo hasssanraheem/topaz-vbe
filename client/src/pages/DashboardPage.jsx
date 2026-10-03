@@ -952,7 +952,7 @@ function CompanyTabContent({ companyNumber, dec, onChange, onSave, onSubmit, sav
   const quarter = liveQuarter?.quarter || getQuarter(DEFAULT_PERIOD);
 
   return (
-    <div>
+    <div className="df-page-wrap">
       <h2>Company {companyNumber} — Decision Form</h2>
 
       <DecisionFormPage

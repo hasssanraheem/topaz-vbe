@@ -722,7 +722,13 @@ input[type="checkbox"].field-check {
   font-family: Arial, 'MS Sans Serif', sans-serif;
   font-size: 0.80em;
   color: #000;
-  max-width: 860px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.df-page-wrap {
+  max-width: 900px;
+  margin: 0 auto;
 }
 
 .df-titlebar {
