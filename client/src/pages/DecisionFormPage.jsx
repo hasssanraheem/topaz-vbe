@@ -157,7 +157,7 @@ export default function DecisionFormPage({ dec, onChange, teamNumber, period, di
 
         {/* ── Header: Simulation Data + Topaz-vbe branding ─────────────────── */}
         <div className="df-header-row">
-          <fieldset className="df-fs" style={{ flex: 1 }}>
+          <fieldset className="df-fs-sim" style={{ flex: 1 }}>
             <legend>Simulation Data</legend>
             <table><tbody>
               <tr>
@@ -178,7 +178,7 @@ export default function DecisionFormPage({ dec, onChange, teamNumber, period, di
         </div>
 
         {/* ── Company Information ──────────────────────────────────────────── */}
-        <fieldset className="df-fs" style={{ width: '100%', marginBottom: 0 }}>
+        <fieldset className="df-fs-company" style={{ width: '100%', marginBottom: 0 }}>
           <legend>Company Information</legend>
           <table><tbody>
             <tr>

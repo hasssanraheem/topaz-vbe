@@ -716,12 +716,13 @@ input[type="checkbox"].field-check {
 
 /* ── Windows 95-style Decision Form ──────────────────────────────────── */
 .df-window {
-  background: #d4d0c8;
+  background: #f7f7e7;
   border: 2px solid;
   border-color: #fff #808080 #808080 #fff;
   font-family: Arial, 'MS Sans Serif', sans-serif;
-  font-size: 0.82em;
+  font-size: 0.80em;
   color: #000;
+  max-width: 860px;
 }
 
 .df-titlebar {
@@ -754,7 +755,10 @@ input[type="checkbox"].field-check {
   font-family: Arial, sans-serif;
 }
 
-.df-body { padding: 4px 6px 6px; }
+.df-body {
+  padding: 4px 6px 6px;
+  background: #f7f7e7;
+}
 
 .df-header-row {
   display: flex;
@@ -783,19 +787,41 @@ input[type="checkbox"].field-check {
   border-color: #808080 #fff #fff #808080;
   padding: 2px 6px 4px;
   margin-bottom: 0;
-  background: #d4d0c8;
+  background: #f7f7e7;
 }
 
-.df-fs legend {
+/* Simulation Data section — light cyan */
+.df-fs-sim {
+  border: 2px solid;
+  border-color: #808080 #fff #fff #808080;
+  padding: 2px 6px 4px;
+  background: #b8f0f8;
+}
+
+/* Company Information section — light pink/peach */
+.df-fs-company {
+  border: 2px solid;
+  border-color: #808080 #fff #fff #808080;
+  padding: 2px 6px 4px;
+  background: #ffd8c8;
+}
+
+.df-fs legend,
+.df-fs-sim legend,
+.df-fs-company legend {
   font-size: 0.82em;
   font-weight: bold;
   padding: 0 3px;
   color: #000;
 }
 
-.df-fs table { border-collapse: collapse; }
+.df-fs table,
+.df-fs-sim table,
+.df-fs-company table { border-collapse: collapse; }
 
-.df-fs th {
+.df-fs th,
+.df-fs-sim th,
+.df-fs-company th {
   font-size: 0.82em;
   font-weight: 600;
   text-align: left;
@@ -804,7 +830,9 @@ input[type="checkbox"].field-check {
   color: #000;
 }
 
-.df-fs td {
+.df-fs td,
+.df-fs-sim td,
+.df-fs-company td {
   padding: 1px 4px;
   text-align: left;
   vertical-align: middle;
@@ -817,7 +845,7 @@ input[type="checkbox"].field-check {
   border-bottom: 1px solid #808080;
   padding: 2px 6px;
   margin: 4px 0;
-  background: #d4d0c8;
+  background: #f7f7e7;
 }
 
 .df-grid {
@@ -840,7 +868,7 @@ input[type="checkbox"].field-check {
 }
 
 .df-inp {
-  width: 52px;
+  width: 46px;
   text-align: center;
   border: 2px solid;
   border-color: #808080 #fff #fff #808080;
@@ -848,16 +876,16 @@ input[type="checkbox"].field-check {
   padding: 0 2px;
   font: 11px Arial, sans-serif;
   color: maroon;
-  height: 18px;
+  height: 16px;
   -moz-appearance: textfield;
 }
 
 .df-inp::-webkit-outer-spin-button,
 .df-inp::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 
-.df-inp:disabled { background: #d4d0c8; color: #666; }
-.df-inp-w { width: 70px; }
-.df-inp-sm { width: 38px; }
+.df-inp:disabled { background: #e8e8e0; color: #666; }
+.df-inp-w { width: 62px; }
+.df-inp-sm { width: 34px; }
 
 .df-sel {
   border: 2px solid;
@@ -865,11 +893,11 @@ input[type="checkbox"].field-check {
   background: #fff;
   font: 11px Arial, sans-serif;
   color: #000;
-  height: 20px;
+  height: 18px;
   padding: 0 2px;
 }
 
-.df-sel:disabled { background: #d4d0c8; color: #666; }
+.df-sel:disabled { background: #e8e8e0; color: #666; }
 
 .df-err {
   color: #c00;
