@@ -720,14 +720,14 @@ input[type="checkbox"].field-check {
   border: 2px solid;
   border-color: #fff #808080 #808080 #fff;
   font-family: Arial, 'MS Sans Serif', sans-serif;
-  font-size: 0.80em;
+  font-size: 0.76em;
   color: #000;
-  max-width: 1060px;
+  max-width: 720px;
   margin: 0 auto;
 }
 
 .df-page-wrap {
-  max-width: 1060px;
+  max-width: 720px;
   margin: 0 auto;
 }
 
@@ -762,7 +762,7 @@ input[type="checkbox"].field-check {
 }
 
 .df-body {
-  padding: 4px 6px 6px;
+  padding: 2px 4px 4px;
   background: #f7f7e7;
 }
 
@@ -777,21 +777,21 @@ input[type="checkbox"].field-check {
   background: #000;
   color: #00e5ff;
   font-weight: bold;
-  font-size: 1.35em;
+  font-size: 1.25em;
   text-align: center;
-  padding: 8px 18px;
+  padding: 6px 14px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-width: 160px;
+  min-width: 140px;
   line-height: 1.5;
 }
 
 .df-fs {
   border: 2px solid;
   border-color: #808080 #fff #fff #808080;
-  padding: 2px 6px 4px;
+  padding: 1px 4px 2px;
   margin-bottom: 0;
   background: #f7f7e7;
 }
@@ -800,7 +800,7 @@ input[type="checkbox"].field-check {
 .df-fs-sim {
   border: 2px solid;
   border-color: #808080 #fff #fff #808080;
-  padding: 2px 6px 4px;
+  padding: 1px 4px 2px;
   background: #b8f0f8;
 }
 
@@ -808,7 +808,7 @@ input[type="checkbox"].field-check {
 .df-fs-company {
   border: 2px solid;
   border-color: #808080 #fff #fff #808080;
-  padding: 2px 6px 4px;
+  padding: 1px 4px 2px;
   background: #ffd8c8;
 }
 
@@ -831,7 +831,7 @@ input[type="checkbox"].field-check {
   font-size: 0.82em;
   font-weight: 600;
   text-align: left;
-  padding: 1px 4px;
+  padding: 0 3px;
   white-space: nowrap;
   color: #000;
 }
@@ -839,7 +839,7 @@ input[type="checkbox"].field-check {
 .df-fs td,
 .df-fs-sim td,
 .df-fs-company td {
-  padding: 1px 4px;
+  padding: 0 3px;
   text-align: left;
   vertical-align: middle;
 }
@@ -870,21 +870,21 @@ input[type="checkbox"].field-check {
 .df-col {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
   min-width: 0;
   overflow: hidden;
 }
 
 .df-inp {
-  width: 46px;
+  width: 40px;
   text-align: center;
   border: 2px solid;
   border-color: #808080 #fff #fff #808080;
   background: #fff;
-  padding: 0 2px;
-  font: 11px Arial, sans-serif;
+  padding: 0 1px;
+  font: 10px Arial, sans-serif;
   color: maroon;
-  height: 16px;
+  height: 14px;
   -moz-appearance: textfield;
 }
 
@@ -892,17 +892,17 @@ input[type="checkbox"].field-check {
 .df-inp::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 
 .df-inp:disabled { background: #e8e8e0; color: #666; }
-.df-inp-w { width: 62px; }
-.df-inp-sm { width: 34px; }
+.df-inp-w { width: 54px; }
+.df-inp-sm { width: 30px; }
 
 .df-sel {
   border: 2px solid;
   border-color: #808080 #fff #fff #808080;
   background: #fff;
-  font: 11px Arial, sans-serif;
+  font: 10px Arial, sans-serif;
   color: #000;
-  height: 18px;
-  padding: 0 2px;
+  height: 16px;
+  padding: 0 1px;
 }
 
 .df-sel:disabled { background: #e8e8e0; color: #666; }
