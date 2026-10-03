@@ -176,16 +176,19 @@ export default function DecisionFormPage({ dec, onChange, teamNumber, period, di
 
             <fieldset className="df-fs-company" style={{ flex: 1 }}>
               <legend>Company Information</legend>
-              <table><tbody>
+              <table><thead>
                 <tr>
-                  <TH>Group Number</TH>
-                  <TD><span className="df-val-box">{groupNum}</span></TD>
-                  <TH>Company Number</TH>
-                  <TD><span className="df-val-box">{teamNumber}</span></TD>
-                  <TH>Identity Number</TH>
-                  <TD><span className="df-val-box">{identityNum}</span></TD>
-                  <TH>Status</TH>
-                  <TD><span className="df-val-box">{status}</span></TD>
+                  <th>Group Number</th>
+                  <th>Company Number</th>
+                  <th>Identity Number</th>
+                  <th>Status</th>
+                </tr>
+              </thead><tbody>
+                <tr>
+                  <td><span className="df-val-box">{groupNum}</span></td>
+                  <td><span className="df-val-box">{teamNumber}</span></td>
+                  <td><span className="df-val-box">{identityNum}</span></td>
+                  <td><span className="df-val-box">{status}</span></td>
                 </tr>
               </tbody></table>
             </fieldset>
