@@ -720,14 +720,14 @@ input[type="checkbox"].field-check {
   border: 2px solid;
   border-color: #fff #808080 #808080 #fff;
   font-family: Arial, 'MS Sans Serif', sans-serif;
-  font-size: 0.76em;
+  font-size: 0.78em;
   color: #000;
-  max-width: 720px;
+  max-width: 920px;
   margin: 0 auto;
 }
 
 .df-page-wrap {
-  max-width: 720px;
+  max-width: 920px;
   margin: 0 auto;
 }
 
@@ -823,7 +823,11 @@ input[type="checkbox"].field-check {
 
 .df-fs table,
 .df-fs-sim table,
-.df-fs-company table { border-collapse: collapse; }
+.df-fs-company table {
+  border-collapse: collapse;
+  width: 100%;
+  max-width: 100%;
+}
 
 .df-fs th,
 .df-fs-sim th,
