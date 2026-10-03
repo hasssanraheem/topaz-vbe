@@ -1,8 +1,7 @@
 import { PRODUCTS, AREAS, MIN_ASSEMBLY_TIME } from '../data/mockData.js';
 import { validateAll } from '../logic/validation.js';
 
-// Compact input used throughout the image-matching form
-function FInput({ value, onChange, disabled, min, max, step = 1, style = {} }) {
+function FInput({ value, onChange, disabled, min, max, step = 1, className = 'df-inp', style = {} }) {
   return (
     <input
       type="number"
@@ -12,15 +11,15 @@ function FInput({ value, onChange, disabled, min, max, step = 1, style = {} }) {
       step={step}
       disabled={disabled}
       onChange={e => onChange(e.target.value)}
-      style={{ width: 52, textAlign: 'center', ...style }}
+      className={className}
+      style={style}
     />
   );
 }
 
-// Checkbox with label inline
 function FCheck({ label, checked, onChange, disabled }) {
   return (
-    <label style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginRight: 12 }}>
+    <label style={{ display: 'inline-flex', alignItems: 'center', gap: 3, marginRight: 10, fontSize: '0.9em' }}>
       <input type="checkbox" checked={!!checked} disabled={disabled}
         onChange={e => onChange(e.target.checked)} />
       {label && <span>{label}</span>}
@@ -28,46 +27,33 @@ function FCheck({ label, checked, onChange, disabled }) {
   );
 }
 
-// Error badge shown next to an input when invalid
 function Err({ msg }) {
-  return msg ? <span style={{ color: 'red', fontSize: '0.75em', marginLeft: 2 }} title={msg}>⚠</span> : null;
+  return msg ? <span className="df-err" title={msg}>!</span> : null;
 }
 
-// Section box matching the original form's bordered group style
-function Section({ title, children, style = {} }) {
-  return (
-    <fieldset style={{ border: '1px solid #888', padding: '4px 8px', marginBottom: 6, ...style }}>
-      {title && <legend style={{ fontSize: '0.78em', fontWeight: 600, padding: '0 4px' }}>{title}</legend>}
-      {children}
-    </fieldset>
-  );
-}
-
-// Small label cell for table rows
-const TH = ({ children, right }) => (
-  <th style={{ fontSize: '0.78em', textAlign: right ? 'right' : 'left', padding: '2px 4px', fontWeight: 600, whiteSpace: 'nowrap' }}>
-    {children}
-  </th>
+// Thin row label cell
+const TH = ({ children }) => (
+  <th>{children}</th>
 );
-const TD = ({ children, center }) => (
-  <td style={{ padding: '2px 4px', textAlign: center ? 'center' : 'left' }}>{children}</td>
+const TD = ({ children }) => (
+  <td>{children}</td>
 );
 
-export default function DecisionFormPage({ dec, onChange, teamNumber, period, disabled, periodData, quarter, session, saveStatus, submitStatus, onNavigate }) {
-  const machines       = periodData?.resources?.machinesAvailable || 6;
+export default function DecisionFormPage({ dec, onChange, teamNumber, period, disabled, periodData, quarter, session, saveStatus, submitStatus }) {
+  const machines        = periodData?.resources?.machinesAvailable || 6;
   const assemblyWorkers = periodData?.resources?.personnel?.assemblyWorkers?.nextQtr || 40;
-  const salespeople    = periodData?.resources?.personnel?.salespeople?.nextQtr || 6;
-  const vehicles       = periodData?.resources?.vehiclesAvailable || 4;
-  const prevWage       = periodData?.decisions?.assemblyWage || 8.50;
+  const salespeople     = periodData?.resources?.personnel?.salespeople?.nextQtr || 6;
+  const vehicles        = periodData?.resources?.vehiclesAvailable || 4;
+  const prevWage        = periodData?.decisions?.assemblyWage || 8.50;
 
   const context = { machines, assemblyWorkers, salespeople, quarter, prevAssemblyWage: prevWage, vehicles };
   const { errors, warnings } = validateAll(dec, context);
   const hasErrors = Object.keys(errors).length > 0;
 
   // ── Header display values ──────────────────────────────────────────────────
-  const simCode    = session?.simulationCode || '—';
-  const groupNum   = session?.groupNumber ?? 1;
-  const year       = session?.startYear || '—';
+  const simCode     = session?.simulationCode || '—';
+  const groupNum    = session?.groupNumber ?? 1;
+  const year        = session?.startYear || '—';
   const identityNum = `ID-100${teamNumber}`;
   const status = submitStatus === 'submitted' ? 'Submitted'
     : saveStatus === 'saved' ? 'Saved'
@@ -124,11 +110,12 @@ export default function DecisionFormPage({ dec, onChange, teamNumber, period, di
     onChange({ ...dec, implementImprovement });
   }
 
-  // Salary and budget: stored in full £, displayed scaled
-  const salaryDisplay  = Math.round((dec.salespersonSalary || 0) / 100); // £'00
-  const budgetDisplay  = Math.round((dec.managementBudget  || 0) / 1000); // £'000
+  // Salary: stored full £ → displayed as £'00
+  const salaryDisplay = Math.round((dec.salespersonSalary || 0) / 100);
+  // Budget: stored full £ → displayed as £'000
+  const budgetDisplay = Math.round((dec.managementBudget  || 0) / 1000);
 
-  // Promotion: stored in full £, displayed in £'000
+  // Promotion: stored full £ → displayed as £'000
   function promDisp(type, p) { return Math.round((dec.promotion?.[type]?.[p] || 0) / 1000); }
   function promSet(type, p, v) { setPromotion(type, p, Number(v) * 1000); }
   function resDisp(p) { return Math.round((dec.researchExp?.[p] || 0) / 1000); }
@@ -137,459 +124,528 @@ export default function DecisionFormPage({ dec, onChange, teamNumber, period, di
   const promErr = errors.promotion || {};
   const resErr  = errors.researchExp || [];
 
-  // Delivery area order from AREAS: ['Export','South','West','North']
   const AREA_LABELS = AREAS; // ['Export','South','West','North']
+  const P = [0, 1, 2];
 
   return (
-    <div style={{ fontFamily: 'Arial, sans-serif', fontSize: '0.82em' }}>
-      {disabled && (
-        <div className="locked-notice" style={{ marginBottom: 6 }}>
-          Period {period} submitted — decisions are read-only.
-        </div>
-      )}
+    <div className="df-window">
 
-      {hasErrors && !disabled && (
-        <div style={{ background: '#fee', border: '1px solid red', padding: '4px 8px', marginBottom: 6, fontSize: '0.85em' }}>
-          <strong>{Object.keys(errors).length} validation error(s)</strong> — fix before submitting.
-          {warnings.length > 0 && <> &nbsp;|&nbsp; <strong>{warnings.length} warning(s).</strong></>}
+      {/* ── Windows title bar ─────────────────────────────────────────────── */}
+      <div className="df-titlebar">
+        <span>Topaz_Vbe Team Decision Sheet</span>
+        <div className="df-titlebar-btns">
+          <span className="df-titlebar-btn">_</span>
+          <span className="df-titlebar-btn">□</span>
+          <span className="df-titlebar-btn">✕</span>
         </div>
-      )}
-
-      {/* ── Simulation Data + Company Info header ─────────────────────────── */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 6 }}>
-        <Section title="Simulation Data" style={{ flex: 1 }}>
-          <table><tbody>
-            <tr>
-              <TH>Simulation Code</TH>
-              <TD><span style={{ fontWeight: 600 }}>{simCode}</span></TD>
-              <TH>Year</TH>
-              <TD><span style={{ fontWeight: 600 }}>{year}</span></TD>
-              <TH>Quarter</TH>
-              <TD><span style={{ fontWeight: 600 }}>{quarter}</span></TD>
-            </tr>
-          </tbody></table>
-        </Section>
-        <Section title="Company Information" style={{ flex: 2 }}>
-          <table><tbody>
-            <tr>
-              <TH>Group Number</TH><TD><strong>{groupNum}</strong></TD>
-              <TH>Company Number</TH><TD><strong>{teamNumber}</strong></TD>
-              <TH>Identity Number</TH>
-              <TD><strong>{identityNum}</strong>{/* TODO: confirm with client */}</TD>
-              <TH>Status</TH><TD><strong>{status}</strong></TD>
-            </tr>
-          </tbody></table>
-        </Section>
       </div>
 
-      {/* ── Decision Data: two-column layout ──────────────────────────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, alignItems: 'start' }}>
+      <div className="df-body">
 
-        {/* ════ LEFT COLUMN ════════════════════════════════════════════════ */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        {/* ── Status / error notices ───────────────────────────────────────── */}
+        {disabled && (
+          <div className="locked-notice" style={{ marginBottom: 4 }}>
+            Period {period} submitted — decisions are read-only.
+          </div>
+        )}
+        {hasErrors && !disabled && (
+          <div className="df-warn-bar">
+            <strong>{Object.keys(errors).length} validation error(s)</strong> — fix before submitting.
+            {warnings.length > 0 && <> &nbsp;|&nbsp; <strong>{warnings.length} warning(s).</strong></>}
+          </div>
+        )}
 
-          {/* Product Improvements */}
-          <Section title="'Tick' to Implement Major Product Improvements (if any)">
-            <table><thead>
-              <tr><TH/>{PRODUCTS.map((_, p) => <TH key={p}>Product {p+1}</TH>)}</tr>
-            </thead><tbody>
-              <tr>
-                <TH/>
-                {PRODUCTS.map((_, p) => (
-                  <TD key={p} center>
-                    <FCheck checked={dec.implementImprovement?.[p]} disabled={disabled}
-                      onChange={v => setImprove(p, v)} />
-                  </TD>
-                ))}
-              </tr>
-            </tbody></table>
-          </Section>
-
-          {/* Prices */}
-          <Section title="Prices (£'s)">
-            <table><thead>
-              <tr><TH/>{PRODUCTS.map((_, p) => <TH key={p}>Product {p+1}</TH>)}</tr>
-            </thead><tbody>
-              <tr>
-                <TH>Export Market</TH>
-                {PRODUCTS.map((_, p) => (
-                  <TD key={p} center>
-                    <FInput value={dec.prices?.export?.[p]} disabled={disabled} min={0}
-                      onChange={v => setPrice('export', p, v)} />
-                    <Err msg={errors.prices?.export?.[p]} />
-                  </TD>
-                ))}
-              </tr>
-              <tr>
-                <TH>Home Markets</TH>
-                {PRODUCTS.map((_, p) => (
-                  <TD key={p} center>
-                    <FInput value={dec.prices?.home?.[p]} disabled={disabled} min={0}
-                      onChange={v => setPrice('home', p, v)} />
-                    <Err msg={errors.prices?.home?.[p]} />
-                  </TD>
-                ))}
-              </tr>
-            </tbody></table>
-          </Section>
-
-          {/* Promotion Expenditure */}
-          <Section title="Promotion Expenditure (£'000)">
-            <table><thead>
-              <tr><TH/>{PRODUCTS.map((_, p) => <TH key={p}>Product {p+1}</TH>)}</tr>
-            </thead><tbody>
-              {[
-                { key: 'tradePres',     label: 'Trade Press' },
-                { key: 'adSupport',     label: 'Advertising' },
-                { key: 'support',       label: 'Support' },
-                { key: 'merchandising', label: 'Merchandising' },
-              ].map(({ key, label }) => (
-                <tr key={key}>
-                  <TH>{label}</TH>
-                  {PRODUCTS.map((_, p) => (
-                    <TD key={p} center>
-                      <FInput value={promDisp(key, p)} disabled={disabled} min={0}
-                        onChange={v => promSet(key, p, v)} />
-                      <Err msg={promErr[key]?.[p]} />
-                    </TD>
-                  ))}
-                </tr>
-              ))}
-            </tbody></table>
-          </Section>
-
-          {/* Assembly Time — per product in P1/P2/P3 columns (Note A: Option 2) */}
-          <Section title="Assembly Time (Minutes)">
-            <table><thead>
-              <tr><TH/>{PRODUCTS.map((_, p) => <TH key={p}>Product {p+1} (≥{MIN_ASSEMBLY_TIME[p]})</TH>)}</tr>
-            </thead><tbody>
-              <tr>
-                <TH/>
-                {PRODUCTS.map((_, p) => (
-                  <TD key={p} center>
-                    <FInput value={dec.assemblyTimes?.[p]} disabled={disabled}
-                      min={MIN_ASSEMBLY_TIME[p]}
-                      onChange={v => setAsmTime(p, v)} style={{ width: 64 }} />
-                    <Err msg={errors.assemblyTimes?.[p]} />
-                  </TD>
-                ))}
-              </tr>
-            </tbody></table>
-          </Section>
-
-          {/* Salespeople Allocated to Area */}
-          <Section title="Salespeople Allocated to Area">
+        {/* ── Header: Simulation Data + Topaz-vbe branding ─────────────────── */}
+        <div className="df-header-row">
+          <fieldset className="df-fs" style={{ flex: 1 }}>
+            <legend>Simulation Data</legend>
             <table><tbody>
               <tr>
-                {AREA_LABELS.map((area, a) => (
-                  <>
-                    <TH key={`lbl-${a}`}>{area}</TH>
-                    <TD key={`inp-${a}`} center>
-                      <FInput value={dec.salespeopleAlloc?.[a]} disabled={disabled} min={0}
-                        onChange={v => setAlloc(a, v)} />
-                      <Err msg={errors.salespeopleAlloc?.[a]} />
-                    </TD>
-                  </>
-                ))}
+                <TH>Simulation Code</TH>
+                <TD><strong>{simCode}</strong></TD>
+                <TH>Year:</TH>
+                <TD><strong>{year}</strong></TD>
+                <TH>Quarter:</TH>
+                <TD><strong>{quarter}</strong></TD>
               </tr>
             </tbody></table>
-            {errors.salespeopleAlloc?.length > AREA_LABELS.length && (
-              <div style={{ color: 'red', fontSize: '0.8em' }}>
-                {errors.salespeopleAlloc[errors.salespeopleAlloc.length - 1]}
-              </div>
-            )}
-          </Section>
-
-          {/* Salespeople Remuneration */}
-          <Section title="Salespeople's Remuneration">
-            <table><tbody>
-              <tr>
-                <TH>Quarterly Salary (£'00)</TH>
-                <TD>
-                  <FInput value={salaryDisplay} disabled={disabled} min={20}
-                    onChange={v => set('salespersonSalary', Number(v) * 100)}
-                    style={{ width: 64 }} />
-                  <Err msg={errors.salespersonSalary} />
-                </TD>
-                <TH>% Sales Commission</TH>
-                <TD>
-                  <FInput value={dec.salesCommission} disabled={disabled} min={0} max={100}
-                    onChange={v => set('salesCommission', v)} />
-                  <Err msg={errors.salesCommission} />
-                </TD>
-              </tr>
-            </tbody></table>
-          </Section>
-
-          {/* Assembly wage + Shift level */}
-          <Section>
-            <table><tbody>
-              <tr>
-                <TH>Assembly Workers' hourly wage rate (£/hour)</TH>
-                <TD>
-                  <FInput value={dec.assemblyWage} disabled={disabled}
-                    min={8.50} step={0.01} style={{ width: 72 }}
-                    onChange={v => set('assemblyWage', v)} />
-                  <Err msg={errors.assemblyWage} />
-                </TD>
-                <TH>Shift level</TH>
-                <TD>
-                  <select value={dec.shiftLevel || 1} disabled={disabled}
-                    onChange={e => set('shiftLevel', parseInt(e.target.value))}
-                    style={{ width: 44 }}>
-                    <option value={1}>1</option>
-                    <option value={2}>2</option>
-                    <option value={3}>3</option>
-                  </select>
-                  <Err msg={errors.shiftLevel} />
-                </TD>
-              </tr>
-            </tbody></table>
-          </Section>
-
-          {/* Management Budget */}
-          <Section>
-            <table><tbody>
-              <tr>
-                <TH>Quarterly Management Budget (£'000)</TH>
-                <TD>
-                  <FInput value={budgetDisplay} disabled={disabled} min={40}
-                    onChange={v => set('managementBudget', Number(v) * 1000)}
-                    style={{ width: 64 }} />
-                  <Err msg={errors.managementBudget} />
-                </TD>
-              </tr>
-            </tbody></table>
-          </Section>
-
-          {/* Contract Maintenance + Machines to Sell */}
-          <Section>
-            <table><tbody>
-              <tr>
-                <TH>Contract Maintenance hours</TH>
-                <TD>
-                  <FInput value={dec.contractMaintenance} disabled={disabled} min={0}
-                    onChange={v => set('contractMaintenance', v)} />
-                  <Err msg={errors.contractMaintenance} />
-                </TD>
-                <TH>Machines to Sell</TH>
-                <TD>
-                  <FInput value={dec.machinesToSell} disabled={disabled} min={0}
-                    onChange={v => set('machinesToSell', v)} />
-                  <Err msg={errors.machinesToSell} />
-                </TD>
-              </tr>
-            </tbody></table>
-          </Section>
-
-        </div>{/* end LEFT COLUMN */}
-
-        {/* ════ RIGHT COLUMN ═══════════════════════════════════════════════ */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-
-          {/* Dividend + Days Credit */}
-          <Section>
-            <table><tbody>
-              <tr>
-                <TH>Dividend Rate (pence/share)</TH>
-                <TD>
-                  <FInput value={dec.dividendRate} disabled={disabled || [2,4].includes(quarter)} min={0}
-                    onChange={v => set('dividendRate', v)} />
-                  <Err msg={errors.dividendRate} />
-                  {[2,4].includes(quarter) && <span style={{ fontSize: '0.78em', color: '#777', marginLeft: 4 }}>Q1/Q3 only</span>}
-                </TD>
-                <TH>Days Credit Allowed</TH>
-                <TD>
-                  <FInput value={dec.daysCredit} disabled={disabled} min={0}
-                    onChange={v => set('daysCredit', v)} />
-                  <Err msg={errors.daysCredit} />
-                </TD>
-              </tr>
-            </tbody></table>
-          </Section>
-
-          {/* Vans */}
-          <Section>
-            <table><tbody>
-              <tr>
-                <TH>Vans to Buy</TH>
-                <TD>
-                  <FInput value={dec.vansToBuy} disabled={disabled} min={0}
-                    onChange={v => set('vansToBuy', v)} />
-                  <Err msg={errors.vansToBuy} />
-                </TD>
-                <TH>Vans to Sell</TH>
-                <TD>
-                  <FInput value={dec.vansToSell} disabled={disabled} min={0}
-                    onChange={v => set('vansToSell', v)} />
-                  <Err msg={errors.vansToSell} />
-                </TD>
-              </tr>
-            </tbody></table>
-          </Section>
-
-          {/* Information Wanted */}
-          <Section title="Information Wanted">
-            <FCheck label="on Other Companies (£5,000)"
-              checked={dec.buyCompetitorInfo} disabled={disabled}
-              onChange={v => set('buyCompetitorInfo', v)} />
-            <FCheck label="on Market Shares (£5,000)"
-              checked={dec.buyMarketShares} disabled={disabled}
-              onChange={v => set('buyMarketShares', v)} />
-          </Section>
-
-          {/* Delivery Schedule */}
-          <Section title="Make and Deliver Products to">
-            <table><thead>
-              <tr>
-                <TH/>
-                {PRODUCTS.map((_, p) => <TH key={p}>Product {p+1}</TH>)}
-              </tr>
-            </thead><tbody>
-              {AREA_LABELS.map((area, a) => (
-                <tr key={a}>
-                  <TH>{area} Area</TH>
-                  {PRODUCTS.map((_, p) => (
-                    <TD key={p} center>
-                      <FInput value={dec.deliverySchedule?.[p]?.[a]} disabled={disabled}
-                        onChange={v => setDel(p, a, v)} style={{ width: 64 }} />
-                      <Err msg={errors.deliverySchedule?.[p]?.[a]} />
-                    </TD>
-                  ))}
-                </tr>
-              ))}
-            </tbody></table>
-          </Section>
-
-          {/* Research Expenditure */}
-          <Section title="Research Expenditure (£'000)">
-            <table><thead>
-              <tr><TH/>{PRODUCTS.map((_, p) => <TH key={p}>Product {p+1}</TH>)}</tr>
-            </thead><tbody>
-              <tr>
-                <TH/>
-                {PRODUCTS.map((_, p) => (
-                  <TD key={p} center>
-                    <FInput value={resDisp(p)} disabled={disabled} min={0}
-                      onChange={v => resSet(p, v)} />
-                    <Err msg={resErr[p]} />
-                  </TD>
-                ))}
-              </tr>
-            </tbody></table>
-          </Section>
-
-          {/* Salespeople + Assembly Workers R/D/T */}
-          <Section>
-            <table><tbody>
-              <tr>
-                <TH>Salespeople</TH>
-                <TH>Recruit</TH>
-                <TD>
-                  <FInput value={dec.salespeopleRecruit} disabled={disabled} min={0}
-                    onChange={v => set('salespeopleRecruit', v)} />
-                  <Err msg={errors.salespeopleRecruit} />
-                </TD>
-                <TH>Dismiss</TH>
-                <TD>
-                  <FInput value={dec.salespersonsDismiss} disabled={disabled} min={0}
-                    onChange={v => set('salespersonsDismiss', v)} />
-                  <Err msg={errors.salespersonsDismiss} />
-                </TD>
-                <TH>Train</TH>
-                <TD>
-                  <FInput value={dec.salespersonsTrain} disabled={disabled} min={0}
-                    onChange={v => set('salespersonsTrain', v)} />
-                  <Err msg={errors.salespersonsTrain} />
-                </TD>
-              </tr>
-              <tr>
-                <TH>Assembly Workers</TH>
-                <TH>Recruit</TH>
-                <TD>
-                  <FInput value={dec.assemblyRecruit} disabled={disabled} min={0}
-                    onChange={v => set('assemblyRecruit', v)} />
-                  <Err msg={errors.assemblyRecruit} />
-                </TD>
-                <TH>Dismiss</TH>
-                <TD>
-                  <FInput value={dec.assemblyDismiss} disabled={disabled} min={0}
-                    onChange={v => set('assemblyDismiss', v)} />
-                  <Err msg={errors.assemblyDismiss} />
-                </TD>
-                <TH>Train</TH>
-                <TD>
-                  <FInput value={dec.assemblyTrain} disabled={disabled} min={0}
-                    onChange={v => set('assemblyTrain', v)} />
-                  <Err msg={errors.assemblyTrain} />
-                </TD>
-              </tr>
-            </tbody></table>
-          </Section>
-
-          {/* Raw Material */}
-          <Section title="Raw Material">
-            <table><tbody>
-              <tr>
-                <TH>Units to Order</TH>
-                <TD>
-                  <FInput value={dec.materialsQty} disabled={disabled} min={0}
-                    onChange={v => set('materialsQty', v)} style={{ width: 72 }} />
-                  <Err msg={errors.materialsQty} />
-                </TD>
-                <TH>Supplier No.</TH>
-                <TD>
-                  <select value={dec.materialsSupplier ?? 0} disabled={disabled}
-                    onChange={e => set('materialsSupplier', parseInt(e.target.value))}
-                    style={{ width: 44 }}>
-                    <option value={0}>0</option>
-                    <option value={1}>1</option>
-                    <option value={2}>2</option>
-                    <option value={3}>3</option>
-                  </select>
-                </TD>
-                <TH>No. of Deliveries</TH>
-                <TD>
-                  <FInput value={dec.materialsDeliveries} disabled={disabled} min={0}
-                    onChange={v => set('materialsDeliveries', v)} />
-                  <Err msg={errors.materialsDeliveries} />
-                </TD>
-              </tr>
-            </tbody></table>
-          </Section>
-
-          {/* New Machines to Order */}
-          <Section>
-            <table><tbody>
-              <tr>
-                <TH>New Machines to Order</TH>
-                <TD>
-                  <FInput value={dec.machinesToOrder} disabled={disabled} min={0}
-                    onChange={v => set('machinesToOrder', v)} />
-                  <Err msg={errors.machinesToOrder} />
-                </TD>
-              </tr>
-            </tbody></table>
-          </Section>
-
-        </div>{/* end RIGHT COLUMN */}
-      </div>{/* end grid */}
-
-      {/* ── Inline validation summary (errors/warnings only — buttons are in parent) ── */}
-      {!disabled && (hasErrors || warnings.length > 0) && (
-        <div style={{ marginTop: 6, display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-          {hasErrors && (
-            <span style={{ color: 'red', fontSize: '0.85em' }}>
-              Fix {Object.keys(errors).length} error(s) before submitting.
-            </span>
-          )}
-          {!hasErrors && warnings.length > 0 && (
-            <span style={{ color: '#b86000', fontSize: '0.85em' }}>
-              {warnings.length} capacity warning(s) — review before submitting.
-            </span>
-          )}
+          </fieldset>
+          <div className="df-brand">
+            <span>Topaz-vbe</span>
+            <span>from Edit</span>
+            <span>Systems Ltd</span>
+          </div>
         </div>
-      )}
+
+        {/* ── Company Information ──────────────────────────────────────────── */}
+        <fieldset className="df-fs" style={{ width: '100%', marginBottom: 0 }}>
+          <legend>Company Information</legend>
+          <table><tbody>
+            <tr>
+              <TH>Group Number</TH>
+              <TD><strong>{groupNum}</strong></TD>
+              <TH>Company Number</TH>
+              <TD><strong>{teamNumber}</strong></TD>
+              <TH>Identity Number</TH>
+              <TD><strong>{identityNum}</strong></TD>
+              <TH>Status</TH>
+              <TD><strong>{status}</strong></TD>
+            </tr>
+          </tbody></table>
+        </fieldset>
+
+        {/* ── Decision Data section header ─────────────────────────────────── */}
+        <div className="df-dec-header">Decision Data</div>
+
+        {/* ── Two-column layout ─────────────────────────────────────────────── */}
+        <div className="df-grid">
+
+          {/* ════ LEFT COLUMN ════════════════════════════════════════════════ */}
+          <div className="df-col">
+
+            {/* Product Improvements */}
+            <fieldset className="df-fs">
+              <legend>'Tick' to Implement Major Product Improvements (if any)</legend>
+              <table><thead>
+                <tr>
+                  <th style={{ width: 160 }}/>
+                  {PRODUCTS.map((_, p) => <th key={p}>Product {p+1}</th>)}
+                </tr>
+              </thead><tbody>
+                <tr>
+                  <td/>
+                  {P.map(p => (
+                    <td key={p} style={{ textAlign: 'center' }}>
+                      <FCheck checked={dec.implementImprovement?.[p]} disabled={disabled}
+                        onChange={v => setImprove(p, v)} />
+                    </td>
+                  ))}
+                </tr>
+              </tbody></table>
+            </fieldset>
+
+            {/* Prices */}
+            <fieldset className="df-fs">
+              <legend>Prices (£'s)</legend>
+              <table><thead>
+                <tr>
+                  <th style={{ width: 100 }}/>
+                  {PRODUCTS.map((_, p) => <th key={p}>Product {p+1}</th>)}
+                </tr>
+              </thead><tbody>
+                <tr>
+                  <TH>Export Market</TH>
+                  {P.map(p => (
+                    <td key={p} style={{ textAlign: 'center' }}>
+                      <FInput value={dec.prices?.export?.[p]} disabled={disabled} min={0}
+                        onChange={v => setPrice('export', p, v)} />
+                      <Err msg={errors.prices?.export?.[p]} />
+                    </td>
+                  ))}
+                </tr>
+                <tr>
+                  <TH>Home Markets</TH>
+                  {P.map(p => (
+                    <td key={p} style={{ textAlign: 'center' }}>
+                      <FInput value={dec.prices?.home?.[p]} disabled={disabled} min={0}
+                        onChange={v => setPrice('home', p, v)} />
+                      <Err msg={errors.prices?.home?.[p]} />
+                    </td>
+                  ))}
+                </tr>
+              </tbody></table>
+            </fieldset>
+
+            {/* Promotion Expenditure */}
+            <fieldset className="df-fs">
+              <legend>Promotion Expenditure (£'000)</legend>
+              <table><thead>
+                <tr>
+                  <th style={{ width: 120 }}/>
+                  {PRODUCTS.map((_, p) => <th key={p}>Product {p+1}</th>)}
+                </tr>
+              </thead><tbody>
+                {[
+                  { key: 'tradePres',     label: 'Trade Press' },
+                  { key: 'adSupport',     label: 'Advertising Support' },
+                  { key: 'support',       label: 'Support' },
+                  { key: 'merchandising', label: 'Merchandising' },
+                ].map(({ key, label }) => (
+                  <tr key={key}>
+                    <TH>{label}</TH>
+                    {P.map(p => (
+                      <td key={p} style={{ textAlign: 'center' }}>
+                        <FInput value={promDisp(key, p)} disabled={disabled} min={0}
+                          onChange={v => promSet(key, p, v)} />
+                        <Err msg={promErr[key]?.[p]} />
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody></table>
+            </fieldset>
+
+            {/* Assembly Time */}
+            <fieldset className="df-fs">
+              <legend>Assembly Time: (Minutes)</legend>
+              <table><thead>
+                <tr>
+                  <th style={{ width: 60 }}/>
+                  {PRODUCTS.map((_, p) => <th key={p}>Product {p+1} (≥{MIN_ASSEMBLY_TIME[p]})</th>)}
+                </tr>
+              </thead><tbody>
+                <tr>
+                  <td/>
+                  {P.map(p => (
+                    <td key={p} style={{ textAlign: 'center' }}>
+                      <FInput value={dec.assemblyTimes?.[p]} disabled={disabled}
+                        min={MIN_ASSEMBLY_TIME[p]} className="df-inp df-inp-w"
+                        onChange={v => setAsmTime(p, v)} />
+                      <Err msg={errors.assemblyTimes?.[p]} />
+                    </td>
+                  ))}
+                </tr>
+              </tbody></table>
+            </fieldset>
+
+            {/* Salespeople Allocated to Area */}
+            <fieldset className="df-fs">
+              <legend>Salespeople Allocated to Area</legend>
+              <table><tbody>
+                <tr>
+                  {AREA_LABELS.map((area, a) => (
+                    <>
+                      <th key={`lbl-${a}`}>{area} Area</th>
+                      <td key={`inp-${a}`} style={{ textAlign: 'center' }}>
+                        <FInput value={dec.salespeopleAlloc?.[a]} disabled={disabled} min={0}
+                          onChange={v => setAlloc(a, v)} />
+                        <Err msg={errors.salespeopleAlloc?.[a]} />
+                      </td>
+                    </>
+                  ))}
+                </tr>
+              </tbody></table>
+              {errors.salespeopleAlloc?.length > AREA_LABELS.length && (
+                <div style={{ color: 'red', fontSize: '0.8em', padding: '2px 4px' }}>
+                  {errors.salespeopleAlloc[errors.salespeopleAlloc.length - 1]}
+                </div>
+              )}
+            </fieldset>
+
+            {/* Salespeople's Remuneration */}
+            <fieldset className="df-fs">
+              <legend>Salespeople's Remuneration</legend>
+              <table><tbody>
+                <tr>
+                  <TH>Quarterly Salary (£'00)</TH>
+                  <td>
+                    <FInput value={salaryDisplay} disabled={disabled} min={20}
+                      className="df-inp df-inp-w"
+                      onChange={v => set('salespersonSalary', Number(v) * 100)} />
+                    <Err msg={errors.salespersonSalary} />
+                  </td>
+                  <TH>% Sales Commission</TH>
+                  <td>
+                    <FInput value={dec.salesCommission} disabled={disabled} min={0} max={100}
+                      onChange={v => set('salesCommission', v)} />
+                    <Err msg={errors.salesCommission} />
+                  </td>
+                </tr>
+              </tbody></table>
+            </fieldset>
+
+            {/* Assembly Workers' wage + Shift level */}
+            <fieldset className="df-fs">
+              <table><tbody>
+                <tr>
+                  <TH>Assembly Workers' hourly wage rate: (Pounds.Pence)</TH>
+                  <td>
+                    <FInput value={dec.assemblyWage} disabled={disabled}
+                      min={8.50} step={0.01} className="df-inp df-inp-w"
+                      onChange={v => set('assemblyWage', v)} />
+                    <Err msg={errors.assemblyWage} />
+                  </td>
+                  <TH>Shift level:</TH>
+                  <td>
+                    <select value={dec.shiftLevel || 1} disabled={disabled}
+                      className="df-sel"
+                      onChange={e => set('shiftLevel', parseInt(e.target.value))}>
+                      <option value={1}>1</option>
+                      <option value={2}>2</option>
+                      <option value={3}>3</option>
+                    </select>
+                    <Err msg={errors.shiftLevel} />
+                  </td>
+                </tr>
+              </tbody></table>
+            </fieldset>
+
+            {/* Management Budget */}
+            <fieldset className="df-fs">
+              <table><tbody>
+                <tr>
+                  <TH>Quarterly Management Budget: (£'000)</TH>
+                  <td>
+                    <FInput value={budgetDisplay} disabled={disabled} min={40}
+                      className="df-inp df-inp-w"
+                      onChange={v => set('managementBudget', Number(v) * 1000)} />
+                    <Err msg={errors.managementBudget} />
+                  </td>
+                </tr>
+              </tbody></table>
+            </fieldset>
+
+            {/* Contract Maintenance + Machines to Sell */}
+            <fieldset className="df-fs">
+              <table><tbody>
+                <tr>
+                  <TH>Contract Maintenance hours:</TH>
+                  <td>
+                    <FInput value={dec.contractMaintenance} disabled={disabled} min={0}
+                      onChange={v => set('contractMaintenance', v)} />
+                    <Err msg={errors.contractMaintenance} />
+                  </td>
+                  <TH>Machines to Sell:</TH>
+                  <td>
+                    <FInput value={dec.machinesToSell} disabled={disabled} min={0}
+                      onChange={v => set('machinesToSell', v)} />
+                    <Err msg={errors.machinesToSell} />
+                  </td>
+                </tr>
+              </tbody></table>
+            </fieldset>
+
+          </div>{/* end LEFT COLUMN */}
+
+          {/* Vertical divider */}
+          <div className="df-vdiv" />
+
+          {/* ════ RIGHT COLUMN ═══════════════════════════════════════════════ */}
+          <div className="df-col">
+
+            {/* Dividend Rate + Days Credit */}
+            <fieldset className="df-fs">
+              <table><tbody>
+                <tr>
+                  <TH>Dividend Rate: (pence/share)</TH>
+                  <td>
+                    <FInput value={dec.dividendRate} disabled={disabled || [2,4].includes(quarter)} min={0}
+                      onChange={v => set('dividendRate', v)} />
+                    <Err msg={errors.dividendRate} />
+                    {[2,4].includes(quarter) && (
+                      <span style={{ fontSize: '0.78em', color: '#555', marginLeft: 3 }}>Q1/Q3 only</span>
+                    )}
+                  </td>
+                  <TH>Days Credit Allowed:</TH>
+                  <td>
+                    <FInput value={dec.daysCredit} disabled={disabled} min={0}
+                      onChange={v => set('daysCredit', v)} />
+                    <Err msg={errors.daysCredit} />
+                  </td>
+                </tr>
+              </tbody></table>
+            </fieldset>
+
+            {/* Vans */}
+            <fieldset className="df-fs">
+              <table><tbody>
+                <tr>
+                  <TH>Vans to Buy:</TH>
+                  <td>
+                    <FInput value={dec.vansToBuy} disabled={disabled} min={0}
+                      onChange={v => set('vansToBuy', v)} />
+                    <Err msg={errors.vansToBuy} />
+                  </td>
+                  <TH>Vans to Sell:</TH>
+                  <td>
+                    <FInput value={dec.vansToSell} disabled={disabled} min={0}
+                      onChange={v => set('vansToSell', v)} />
+                    <Err msg={errors.vansToSell} />
+                  </td>
+                </tr>
+              </tbody></table>
+            </fieldset>
+
+            {/* Information Wanted */}
+            <fieldset className="df-fs">
+              <legend>Information Wanted</legend>
+              <table><tbody>
+                <tr>
+                  <td>
+                    <FCheck label="on Other Companies" checked={dec.buyCompetitorInfo}
+                      disabled={disabled} onChange={v => set('buyCompetitorInfo', v)} />
+                  </td>
+                  <td>
+                    <FCheck label="on Market Shares" checked={dec.buyMarketShares}
+                      disabled={disabled} onChange={v => set('buyMarketShares', v)} />
+                  </td>
+                </tr>
+              </tbody></table>
+            </fieldset>
+
+            {/* Make and Deliver Products to */}
+            <fieldset className="df-fs">
+              <legend>Make and Deliver Products to:</legend>
+              <table><thead>
+                <tr>
+                  <th style={{ width: 90 }}/>
+                  {PRODUCTS.map((_, p) => <th key={p}>Product {p+1}</th>)}
+                </tr>
+              </thead><tbody>
+                {AREA_LABELS.map((area, a) => (
+                  <tr key={a}>
+                    <TH>{area} Area</TH>
+                    {P.map(p => (
+                      <td key={p} style={{ textAlign: 'center' }}>
+                        <FInput value={dec.deliverySchedule?.[p]?.[a]} disabled={disabled}
+                          className="df-inp df-inp-w"
+                          onChange={v => setDel(p, a, v)} />
+                        <Err msg={errors.deliverySchedule?.[p]?.[a]} />
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody></table>
+            </fieldset>
+
+            {/* Research Expenditure */}
+            <fieldset className="df-fs">
+              <legend>Research Expenditure:(£'000)</legend>
+              <table><thead>
+                <tr>
+                  <th style={{ width: 60 }}/>
+                  {PRODUCTS.map((_, p) => <th key={p}>Product {p+1}</th>)}
+                </tr>
+              </thead><tbody>
+                <tr>
+                  <td/>
+                  {P.map(p => (
+                    <td key={p} style={{ textAlign: 'center' }}>
+                      <FInput value={resDisp(p)} disabled={disabled} min={0}
+                        onChange={v => resSet(p, v)} />
+                      <Err msg={resErr[p]} />
+                    </td>
+                  ))}
+                </tr>
+              </tbody></table>
+            </fieldset>
+
+            {/* Salespeople + Assembly Workers R/D/T */}
+            <fieldset className="df-fs">
+              <table><tbody>
+                <tr>
+                  <TH>Salespeople</TH>
+                  <TH>Recruit</TH>
+                  <td>
+                    <FInput value={dec.salespeopleRecruit} disabled={disabled} min={0}
+                      onChange={v => set('salespeopleRecruit', v)} />
+                    <Err msg={errors.salespeopleRecruit} />
+                  </td>
+                  <TH>Dismiss</TH>
+                  <td>
+                    <FInput value={dec.salespersonsDismiss} disabled={disabled} min={0}
+                      onChange={v => set('salespersonsDismiss', v)} />
+                    <Err msg={errors.salespersonsDismiss} />
+                  </td>
+                  <TH>Train</TH>
+                  <td>
+                    <FInput value={dec.salespersonsTrain} disabled={disabled} min={0}
+                      onChange={v => set('salespersonsTrain', v)} />
+                    <Err msg={errors.salespersonsTrain} />
+                  </td>
+                </tr>
+                <tr>
+                  <TH>Assembly Workers:</TH>
+                  <TH>Recruit</TH>
+                  <td>
+                    <FInput value={dec.assemblyRecruit} disabled={disabled} min={0}
+                      onChange={v => set('assemblyRecruit', v)} />
+                    <Err msg={errors.assemblyRecruit} />
+                  </td>
+                  <TH>Dismiss</TH>
+                  <td>
+                    <FInput value={dec.assemblyDismiss} disabled={disabled} min={0}
+                      onChange={v => set('assemblyDismiss', v)} />
+                    <Err msg={errors.assemblyDismiss} />
+                  </td>
+                  <TH>Train</TH>
+                  <td>
+                    <FInput value={dec.assemblyTrain} disabled={disabled} min={0}
+                      onChange={v => set('assemblyTrain', v)} />
+                    <Err msg={errors.assemblyTrain} />
+                  </td>
+                </tr>
+              </tbody></table>
+            </fieldset>
+
+            {/* Raw Material */}
+            <fieldset className="df-fs">
+              <legend>Raw Material</legend>
+              <table><tbody>
+                <tr>
+                  <TH>Units to Order</TH>
+                  <td>
+                    <FInput value={dec.materialsQty} disabled={disabled} min={0}
+                      className="df-inp df-inp-w"
+                      onChange={v => set('materialsQty', v)} />
+                    <Err msg={errors.materialsQty} />
+                  </td>
+                  <TH>Supplier No.</TH>
+                  <td>
+                    <select value={dec.materialsSupplier ?? 0} disabled={disabled}
+                      className="df-sel"
+                      onChange={e => set('materialsSupplier', parseInt(e.target.value))}>
+                      <option value={0}>0</option>
+                      <option value={1}>1</option>
+                      <option value={2}>2</option>
+                      <option value={3}>3</option>
+                    </select>
+                  </td>
+                  <TH>No. of Deliveries</TH>
+                  <td>
+                    <FInput value={dec.materialsDeliveries} disabled={disabled} min={0}
+                      onChange={v => set('materialsDeliveries', v)} />
+                    <Err msg={errors.materialsDeliveries} />
+                  </td>
+                </tr>
+              </tbody></table>
+            </fieldset>
+
+            {/* New Machines to Order */}
+            <fieldset className="df-fs">
+              <table><tbody>
+                <tr>
+                  <TH>New Machines to Order:</TH>
+                  <td>
+                    <FInput value={dec.machinesToOrder} disabled={disabled} min={0}
+                      onChange={v => set('machinesToOrder', v)} />
+                    <Err msg={errors.machinesToOrder} />
+                  </td>
+                </tr>
+              </tbody></table>
+            </fieldset>
+
+          </div>{/* end RIGHT COLUMN */}
+
+        </div>{/* end df-grid */}
+
+        {/* ── Capacity warnings ─────────────────────────────────────────────── */}
+        {warnings.length > 0 && (
+          <div style={{ marginTop: 4 }}>
+            {warnings.map((w, i) => (
+              <div key={i} className="df-warn-bar">{w}</div>
+            ))}
+          </div>
+        )}
+
+        {/* ── Inline validation summary ─────────────────────────────────────── */}
+        {!disabled && hasErrors && (
+          <div style={{ marginTop: 4, fontSize: '0.85em', color: '#800' }}>
+            Fix {Object.keys(errors).length} error(s) before submitting.
+          </div>
+        )}
+
+      </div>{/* end df-body */}
     </div>
   );
 }
