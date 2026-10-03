@@ -155,44 +155,50 @@ export default function DecisionFormPage({ dec, onChange, teamNumber, period, di
           </div>
         )}
 
-        {/* ── Header: Simulation Data + Topaz-vbe branding ─────────────────── */}
-        <div className="df-header-row">
-          <fieldset className="df-fs-sim" style={{ flex: 1 }}>
-            <legend>Simulation Data</legend>
-            <table><tbody>
-              <tr>
-                <TH>Simulation Code</TH>
-                <TD><strong>{simCode}</strong></TD>
-                <TH>Year:</TH>
-                <TD><strong>{year}</strong></TD>
-                <TH>Quarter:</TH>
-                <TD><strong>{quarter}</strong></TD>
-              </tr>
-            </tbody></table>
-          </fieldset>
+        {/* ── Header: [Sim Data + Company Info] | [Brand box spanning both] ── */}
+        <div style={{ display: 'flex', gap: 4, marginBottom: 0, alignItems: 'stretch' }}>
+
+          {/* Left: stacked Simulation Data + Company Information */}
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <fieldset className="df-fs-sim">
+              <legend>Simulation Data</legend>
+              <table><tbody>
+                <tr>
+                  <TH>Simulation Code</TH>
+                  <TD><strong>{simCode}</strong></TD>
+                  <TH>Year:</TH>
+                  <TD><strong>{year}</strong></TD>
+                  <TH>Quarter:</TH>
+                  <TD><strong>{quarter}</strong></TD>
+                </tr>
+              </tbody></table>
+            </fieldset>
+
+            <fieldset className="df-fs-company" style={{ flex: 1 }}>
+              <legend>Company Information</legend>
+              <table><tbody>
+                <tr>
+                  <TH>Group Number</TH>
+                  <TD><strong>{groupNum}</strong></TD>
+                  <TH>Company Number</TH>
+                  <TD><strong>{teamNumber}</strong></TD>
+                  <TH>Identity Number</TH>
+                  <TD><strong>{identityNum}</strong></TD>
+                  <TH>Status</TH>
+                  <TD><strong>{status}</strong></TD>
+                </tr>
+              </tbody></table>
+            </fieldset>
+          </div>
+
+          {/* Right: brand box spanning full header height */}
           <div className="df-brand">
             <span>Topaz-vbe</span>
             <span>from Edit</span>
             <span>Systems Ltd</span>
           </div>
-        </div>
 
-        {/* ── Company Information ──────────────────────────────────────────── */}
-        <fieldset className="df-fs-company" style={{ width: '100%', marginBottom: 0 }}>
-          <legend>Company Information</legend>
-          <table><tbody>
-            <tr>
-              <TH>Group Number</TH>
-              <TD><strong>{groupNum}</strong></TD>
-              <TH>Company Number</TH>
-              <TD><strong>{teamNumber}</strong></TD>
-              <TH>Identity Number</TH>
-              <TD><strong>{identityNum}</strong></TD>
-              <TH>Status</TH>
-              <TD><strong>{status}</strong></TD>
-            </tr>
-          </tbody></table>
-        </fieldset>
+        </div>
 
         {/* ── Decision Data section header ─────────────────────────────────── */}
         <div className="df-dec-header">Decision Data</div>

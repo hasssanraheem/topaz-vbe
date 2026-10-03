@@ -856,7 +856,7 @@ input[type="checkbox"].field-check {
 
 .df-grid {
   display: grid;
-  grid-template-columns: 1fr 1px 1fr;
+  grid-template-columns: minmax(0, 1fr) 1px minmax(0, 1fr);
   gap: 0 6px;
   align-items: start;
 }
@@ -871,6 +871,8 @@ input[type="checkbox"].field-check {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .df-inp {
