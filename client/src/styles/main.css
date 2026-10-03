@@ -777,14 +777,14 @@ input[type="checkbox"].field-check {
   background: #000;
   color: #00e5ff;
   font-weight: bold;
-  font-size: 1.0em;
+  font-size: 1.35em;
   text-align: center;
-  padding: 6px 14px;
+  padding: 8px 18px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-width: 140px;
+  min-width: 160px;
   line-height: 1.5;
 }
 
@@ -906,6 +906,18 @@ input[type="checkbox"].field-check {
 }
 
 .df-sel:disabled { background: #e8e8e0; color: #666; }
+
+.df-val-box {
+  display: inline-block;
+  border: 2px solid;
+  border-color: #808080 #fff #fff #808080;
+  background: #fff;
+  padding: 0 6px;
+  min-width: 28px;
+  font-weight: bold;
+  text-align: center;
+  font-size: 0.95em;
+}
 
 .df-err {
   color: #c00;

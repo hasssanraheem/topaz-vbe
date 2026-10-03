@@ -165,11 +165,11 @@ export default function DecisionFormPage({ dec, onChange, teamNumber, period, di
               <table><tbody>
                 <tr>
                   <TH>Simulation Code</TH>
-                  <TD><strong>{simCode}</strong></TD>
+                  <TD><span className="df-val-box">{simCode}</span></TD>
                   <TH>Year:</TH>
-                  <TD><strong>{year}</strong></TD>
+                  <TD><span className="df-val-box">{year}</span></TD>
                   <TH>Quarter:</TH>
-                  <TD><strong>{quarter}</strong></TD>
+                  <TD><span className="df-val-box">{quarter}</span></TD>
                 </tr>
               </tbody></table>
             </fieldset>
@@ -179,13 +179,13 @@ export default function DecisionFormPage({ dec, onChange, teamNumber, period, di
               <table><tbody>
                 <tr>
                   <TH>Group Number</TH>
-                  <TD><strong>{groupNum}</strong></TD>
+                  <TD><span className="df-val-box">{groupNum}</span></TD>
                   <TH>Company Number</TH>
-                  <TD><strong>{teamNumber}</strong></TD>
+                  <TD><span className="df-val-box">{teamNumber}</span></TD>
                   <TH>Identity Number</TH>
-                  <TD><strong>{identityNum}</strong></TD>
+                  <TD><span className="df-val-box">{identityNum}</span></TD>
                   <TH>Status</TH>
-                  <TD><strong>{status}</strong></TD>
+                  <TD><span className="df-val-box">{status}</span></TD>
                 </tr>
               </tbody></table>
             </fieldset>
