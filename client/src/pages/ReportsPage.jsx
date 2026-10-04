@@ -206,9 +206,13 @@ export default function ReportsPage({ sub, onNavigate, teamNumber }) {
     }
   }
 
+  const groupLabel  = serverReport?.group?.group_number  ?? 1;
+  const companyLabel = teamNumber ?? 1;
+  const yearLabel   = serverReport?.meta?.year   ?? '—';
+  const qtrLabel    = reportRound ?? '—';
+
   return (
     <div>
-      <h2>Reports</h2>
       {loadingReport ? (
         <div className="demo-notice">Loading reports…</div>
       ) : isLive ? (
@@ -236,6 +240,15 @@ export default function ReportsPage({ sub, onNavigate, teamNumber }) {
       </div>
 
       <div className="report-body">
+        {/* Centred title block matching original Topaz-VBE report */}
+        <div style={{ textAlign: 'center', borderBottom: '1px solid #000', paddingBottom: 8, marginBottom: 14 }}>
+          <div style={{ fontWeight: 'bold', fontSize: '1.05em', letterSpacing: '0.06em' }}>
+            THE TOPAZ MANAGEMENT SIMULATION REPORT
+          </div>
+          <div style={{ fontSize: '0.9em', marginTop: 2 }}>
+            Group {groupLabel}&nbsp;&nbsp; Company {companyLabel}&nbsp;&nbsp; Year {yearLabel}&nbsp;&nbsp; Quarter {qtrLabel}
+          </div>
+        </div>
         {renderContent()}
       </div>
     </div>

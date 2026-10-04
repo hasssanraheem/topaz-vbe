@@ -27,14 +27,14 @@ export default function DataTable({ caption, headers, rows, currency = false, to
         </thead>
         <tbody>
           {rows.map((row, ri) => (
-            <tr key={ri} className={row._sectionHead ? 'section-head' : ''}>
+            <tr key={ri} className={row._sectionHead ? 'section-head' : row.total ? 'totals' : ''}>
               {row.cells
                 ? row.cells.map((cell, ci) => (
                     <td key={ci} className={ci > 0 ? 'num' : ''}>
                       {ci > 0 ? fmt(cell) : cell}
                     </td>
                   ))
-                : Object.values(row).map((cell, ci) => (
+                : Object.values(row).filter(v => typeof v !== 'boolean').map((cell, ci) => (
                     <td key={ci} className={ci > 0 ? 'num' : ''}>{ci > 0 ? fmt(cell) : cell}</td>
                   ))
               }

@@ -159,7 +159,7 @@ export default function DecisionFormPage({ dec, onChange, teamNumber, period, di
         <div style={{ display: 'flex', gap: 4, marginBottom: 0, alignItems: 'stretch' }}>
 
           {/* Left: stacked Simulation Data + Company Information */}
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <div style={{ flex: '0 0 62%', display: 'flex', flexDirection: 'column', gap: 4 }}>
             <fieldset className="df-fs-sim">
               <legend>Simulation Data</legend>
               <table><tbody>
@@ -214,10 +214,10 @@ export default function DecisionFormPage({ dec, onChange, teamNumber, period, di
 
             {/* Product Improvements */}
             <fieldset className="df-fs">
-              <legend>'Tick' to Implement Major Product Improvements (if any)</legend>
+              <legend>'Tick' to Implement<br/>Major Product Improvements<br/>(if any)</legend>
               <table><thead>
                 <tr>
-                  <th style={{ width: 160 }}/>
+                  <th style={{ width: 130 }}/>
                   {PRODUCTS.map((_, p) => <th key={p}>Product {p+1}</th>)}
                 </tr>
               </thead><tbody>
@@ -238,7 +238,7 @@ export default function DecisionFormPage({ dec, onChange, teamNumber, period, di
               <legend>Prices (£'s)</legend>
               <table><thead>
                 <tr>
-                  <th style={{ width: 100 }}/>
+                  <th style={{ width: 130 }}/>
                   {PRODUCTS.map((_, p) => <th key={p}>Product {p+1}</th>)}
                 </tr>
               </thead><tbody>
@@ -270,7 +270,7 @@ export default function DecisionFormPage({ dec, onChange, teamNumber, period, di
               <legend>Promotion Expenditure (£'000)</legend>
               <table><thead>
                 <tr>
-                  <th style={{ width: 120 }}/>
+                  <th style={{ width: 130 }}/>
                   {PRODUCTS.map((_, p) => <th key={p}>Product {p+1}</th>)}
                 </tr>
               </thead><tbody>
@@ -299,7 +299,7 @@ export default function DecisionFormPage({ dec, onChange, teamNumber, period, di
               <legend>Assembly Time: (Minutes)</legend>
               <table><thead>
                 <tr>
-                  <th style={{ width: 60 }}/>
+                  <th style={{ width: 130 }}/>
                   {PRODUCTS.map((_, p) => <th key={p}>Product {p+1} (≥{MIN_ASSEMBLY_TIME[p]})</th>)}
                 </tr>
               </thead><tbody>

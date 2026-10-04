@@ -203,7 +203,7 @@ function ReportOverlay({ report, prevReport, onClose }) {
         </div>
       </div>
       {/* Scrollable report body */}
-      <div style={{ flex: 1, overflowY: 'auto', background: '#fff' }}>
+      <div style={{ flex: 1, overflowY: 'auto', background: '#f7f7e7' }}>
         <FullManagementReport report={d} prevReport={prevReport?.data || null} />
       </div>
     </div>

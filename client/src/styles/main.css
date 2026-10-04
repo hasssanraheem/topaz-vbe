@@ -685,7 +685,105 @@ input[type="checkbox"].field-check {
 .sub-tab:hover { background: #bfe2f9; }
 .sub-tab.active { background: #49bdef; font-weight: bold; border-color: #7C9BCF; }
 
-.report-body { margin-top: 8px; }
+.report-body {
+  margin-top: 8px;
+  background: #fff;
+  border: 1px solid #bbb;
+  padding: 18px 22px;
+  font-family: Arial, sans-serif;
+  font-size: 0.85em;
+  color: #000;
+}
+
+/* Report headings — bold, uppercase, ruled underline */
+.report-body h3 {
+  font-size: 0.95em;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin: 14px 0 4px;
+  border-bottom: 1px solid #000;
+  padding-bottom: 2px;
+  color: #000;
+}
+
+.report-body h4 {
+  font-size: 0.88em;
+  font-weight: bold;
+  margin: 10px 0 2px;
+  color: #000;
+}
+
+/* ── Data-table overrides inside report body ─────────────────────────── */
+.report-body .data-table-wrap { overflow-x: auto; margin-bottom: 10px; }
+
+.report-body .data-table {
+  border-collapse: collapse;
+  background: transparent;
+  border: none;
+  font-size: inherit;
+  min-width: auto;
+  width: auto;
+}
+
+/* Header cells — centered, thin border */
+.report-body .data-table th {
+  background: transparent;
+  color: #000;
+  font-weight: bold;
+  padding: 1px 8px;
+  border: 1px solid #888;
+  text-align: center;
+  font-size: inherit;
+}
+
+/* First column header: label column — no border */
+.report-body .data-table th:first-child {
+  border: none;
+  text-align: left;
+  min-width: 180px;
+}
+
+/* Data cells — white fill, thin border, right-aligned */
+.report-body .data-table td {
+  background: #fff;
+  padding: 1px 8px;
+  border: 1px solid #888;
+  text-align: right;
+  white-space: nowrap;
+  font-size: inherit;
+}
+
+/* First column: label — no border, plain text */
+.report-body .data-table td:first-child {
+  background: transparent;
+  border: none;
+  text-align: left;
+  padding-left: 0;
+}
+
+/* Totals row — bold, top rule */
+.report-body .data-table tr.totals td {
+  background: transparent;
+  font-weight: bold;
+  border-top: 2px solid #000;
+  border-left: none;
+  border-right: none;
+  border-bottom: none;
+}
+.report-body .data-table tr.totals td:not(:first-child) {
+  border: 2px solid #000;
+}
+
+/* Section-head rows — bold label only, no cell borders */
+.report-body .data-table tr.section-head td,
+.report-body .data-table tr.section-head th {
+  background: transparent;
+  color: #000;
+  font-weight: bold;
+  border: none;
+  padding-top: 6px;
+}
 
 /* ── Review / validation status ─────────────────────────────────────── */
 .review-status {
@@ -717,8 +815,7 @@ input[type="checkbox"].field-check {
 /* ── Windows 95-style Decision Form ──────────────────────────────────── */
 .df-window {
   background: #f7f7e7;
-  border: 2px solid;
-  border-color: #fff #808080 #808080 #fff;
+  border: 5px solid #000;
   font-family: Arial, 'MS Sans Serif', sans-serif;
   font-size: 0.73em;
   color: #000;
@@ -774,23 +871,29 @@ input[type="checkbox"].field-check {
 }
 
 .df-brand {
-  background: #000;
+  background: radial-gradient(ellipse at center, #0d1a1a 0%, #000 75%);
   color: #00e5ff;
   font-weight: bold;
-  font-size: 1.15em;
+  font-size: 1.3em;
   text-align: center;
-  padding: 4px 12px;
+  padding: 10px 16px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-width: 120px;
-  line-height: 1.5;
+  flex: 1;
+  min-width: 150px;
+  align-self: stretch;
+  line-height: 1.7;
+  border: 6px solid #000;
+  box-shadow:
+    inset 0 0 18px rgba(0, 229, 255, 0.12),
+    inset 0 2px 6px rgba(0, 0, 0, 0.9);
+  text-shadow: 0 0 8px rgba(0, 229, 255, 0.6);
 }
 
 .df-fs {
-  border: 2px solid;
-  border-color: #808080 #fff #fff #808080;
+  border: none;
   padding: 0 3px 1px;
   margin-bottom: 0;
   background: #f7f7e7;
@@ -798,27 +901,26 @@ input[type="checkbox"].field-check {
 
 /* Simulation Data section — light cyan */
 .df-fs-sim {
-  border: 2px solid;
-  border-color: #808080 #fff #fff #808080;
-  padding: 0 3px 1px;
+  border: 5px solid #000;
+  padding: 10px 6px 12px;
   background: #b8f0f8;
 }
 
 /* Company Information section — light pink/peach */
 .df-fs-company {
-  border: 2px solid;
-  border-color: #808080 #fff #fff #808080;
-  padding: 0 3px 1px;
+  border: 5px solid #000;
+  padding: 10px 6px 12px;
   background: #ffd8c8;
 }
 
 .df-fs legend,
 .df-fs-sim legend,
 .df-fs-company legend {
-  font-size: 0.82em;
+  font-size: 0.8em;
   font-weight: bold;
-  padding: 0 3px;
+  padding: 0 2px;
   color: #000;
+  line-height: 1.1;
 }
 
 .df-fs table,
@@ -835,24 +937,31 @@ input[type="checkbox"].field-check {
   font-size: 0.82em;
   font-weight: 600;
   text-align: left;
-  padding: 0 2px;
   white-space: nowrap;
   color: #000;
 }
 
+/* Decision grid cells — compact */
+.df-fs th { padding: 0 3px; }
+.df-fs td { padding: 0 3px; }
+
+/* Header fieldset cells — taller */
+.df-fs-sim th, .df-fs-company th { padding: 3px 4px; }
+
 .df-fs td,
 .df-fs-sim td,
 .df-fs-company td {
-  padding: 0 2px;
   text-align: left;
   vertical-align: middle;
 }
 
+.df-fs-sim td, .df-fs-company td { padding: 3px 4px; }
+
 .df-dec-header {
   font-weight: bold;
   font-size: 0.88em;
-  border-top: 1px solid #808080;
-  border-bottom: 1px solid #808080;
+  border-top: 3px solid #000;
+  border-bottom: 3px solid #000;
   padding: 1px 4px;
   margin: 2px 0;
   background: #f7f7e7;
@@ -874,7 +983,7 @@ input[type="checkbox"].field-check {
 .df-col {
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: 0;
   min-width: 0;
   overflow: hidden;
 }
@@ -913,8 +1022,7 @@ input[type="checkbox"].field-check {
 
 .df-val-box {
   display: inline-block;
-  border: 2px solid;
-  border-color: #808080 #fff #fff #808080;
+  border: 3px solid #000;
   background: #fff;
   padding: 0 4px;
   min-width: 22px;
